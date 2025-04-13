@@ -7,7 +7,7 @@ endif()
 message(STATUS "Current build type is: ${CMAKE_BUILD_TYPE}")
 
 # Set a default value for MAX_SDK_BASE_PATH and allow overrides
-set(MAX_SDK_BASE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/source/max-sdk-base" CACHE PATH "Path to max-sdk-base")
+set(MAX_SDK_BASE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/max-sdk-base" CACHE PATH "Path to max-sdk-base")
 
 # Set the path for writing Max objects
 set(C74_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/externals" CACHE PATH "Build path")
