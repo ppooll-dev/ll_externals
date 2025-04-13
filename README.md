@@ -1,4 +1,4 @@
-# ppooll_externals
+# ll_externals
 (klaus filip & Joe Steccato)
 
 Max externals used in [ppooll](https://github.com/ppooll-dev/ppooll)
@@ -12,10 +12,11 @@ Max externals used in [ppooll](https://github.com/ppooll-dev/ppooll)
 - ll_fastforward
     send to the header of a message
 
+## Clone
+`git clone --recurse-submodules https://github.com/ppooll-dev/ll_externals.git`
 
 ## Install and Build
 
-Please change `/path/to/max-sdk-base`.
 Note: the following instructions are for building both targets on an OSX machine.
 
 Build for OSX:
