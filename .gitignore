@@ -1,0 +1,4 @@
+.env
+/build-mac
+/build-win
+/build
