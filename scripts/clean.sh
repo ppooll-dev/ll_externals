@@ -6,5 +6,5 @@
 # =========================
 
 echo "Cleaning build artifacts and temporary files..."
-rm -rf build-mac build-win externals package ll_externals.zip
+rm -rf build-mac build-win package ll_externals.zip
 echo "Cleanup complete."

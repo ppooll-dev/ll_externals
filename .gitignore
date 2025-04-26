@@ -1,6 +1,7 @@
 .env
-/build-mac
-/build-win
-/build
+build-mac/
+build-win/
+build/
 package/
+externals/
 ll_externals.zip

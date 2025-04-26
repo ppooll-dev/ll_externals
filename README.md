@@ -106,7 +106,6 @@ git push --tags
 This deletes:
 - `build-mac/`
 - `build-win/`
-- `externals/`
 - `package/`
 - `ll_externals.zip`
 
