@@ -49,6 +49,7 @@ BUILD_DIR_WIN="$REPO_ROOT/build-win"
 PACKAGE_DIR="$REPO_ROOT/package"
 EXTERNALS_DIR="$PACKAGE_DIR/externals"
 HELP_DIR="$PACKAGE_DIR/help"
+DOCS_DIR="$PACKAGE_DIR/docs"
 ZIP_NAME="ll_externals.zip"
 
 # Clean old builds
@@ -83,6 +84,7 @@ fi
 # =========================
 echo "=== Assembling package ==="
 mkdir -p "$EXTERNALS_DIR" "$HELP_DIR"
+mkdir -p "$EXTERNALS_DIR" "$DOCS_DIR"
 
 # Copy built externals
 echo "=== Copying externals ==="
@@ -91,6 +93,8 @@ cp "$REPO_ROOT/externals/"*.mxe64 "$EXTERNALS_DIR/" 2>/dev/null || true
 
 # Copy help files, package-info.json and README.md
 cp "$REPO_ROOT/help/"*.maxhelp "$HELP_DIR/"
+cp "$REPO_ROOT/docs/"*.maxref.xml "$DOCS_DIR/"
+
 cp "$REPO_ROOT/package-info.json" "$PACKAGE_DIR/"
 cp "$REPO_ROOT/README.md" "$PACKAGE_DIR/"
 

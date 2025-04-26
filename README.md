@@ -65,7 +65,7 @@ This will:
 ### 2. Verify
 
 - Check that `ll_externals.zip` was created.
-- Ensure externals and help patches are correct.
+- Ensure externals, docs, and help patches are correct.
 
 ### 3. Bump Version and Tag Release
 
@@ -92,8 +92,8 @@ git push --tags
 - Go to the [Releases page](https://github.com/ppooll-dev/ll_externals/releases)
 - Click **"Draft a new release"**
 - Set:
-  - **Tag:** e.g., `v0.9.0`
-  - **Release title:** e.g., `ll_externals v0.9.0`
+  - **Tag:** e.g., `v1.0.0`
+  - **Release title:** e.g., `ll_externals v1.0.0`
 - **Attach the `ll_externals.zip` file**
 - Click **Publish**.
 
@@ -115,6 +115,7 @@ This deletes:
 
 - **package-info.json** defines the Max package metadata and must match the version.
 - **Help patches** must exist under `/help/`.
+- **Docs (.maxref.xml)** must exist under `/docs/`.
 - **Do not delete** the `/source/`, `/scripts/`, `/toolchains/`, or `/max-sdk-base/` folders unless necessary.
 
 ---
