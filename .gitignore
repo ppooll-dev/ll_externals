@@ -2,3 +2,5 @@
 /build-mac
 /build-win
 /build
+package/
+ll_externals.zip
