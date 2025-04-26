@@ -1,7 +1,7 @@
 {
     "name": "ll_externals",
     "displayname": "ll_externals",
-    "version": "0.9.0",
+    "version": "0.9.1",
     "authors": ["klaus filip", "joe steccato"],
     "description": "A collection of Max/MSP externals used by ppooll and available for general use.",
     "tags": ["gui", "external", "max", "ppooll"],
