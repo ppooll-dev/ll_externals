@@ -89,9 +89,10 @@ echo "=== Copying externals ==="
 cp -R "$REPO_ROOT/externals/"*.mxo "$EXTERNALS_DIR/" 2>/dev/null || true
 cp "$REPO_ROOT/externals/"*.mxe64 "$EXTERNALS_DIR/" 2>/dev/null || true
 
-# Copy help files and package-info
+# Copy help files, package-info.json and README.md
 cp "$REPO_ROOT/help/"*.maxhelp "$HELP_DIR/"
 cp "$REPO_ROOT/package-info.json" "$PACKAGE_DIR/"
+cp "$REPO_ROOT/README.md" "$PACKAGE_DIR/"
 
 # =========================
 # Code Sign and Notarize macOS externals
@@ -141,6 +142,8 @@ fi
 # =========================
 echo "=== Creating final release zip ==="
 cd "$PACKAGE_DIR/.."
-zip -r "$ZIP_NAME" package/
+mv package ll_externals
+zip -r "$ZIP_NAME" ll_externals/
+mv ll_externals package
 
 echo "=== Build complete: $ZIP_NAME created ==="
