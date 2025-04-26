@@ -2,29 +2,24 @@
 
 # =========================
 # scripts/release.sh
-# Bump version, build, commit, and tag
+# Bump version, commit, and tag (no build!)
 # =========================
 
 VERSION="$1"
 
 if [ -z "$VERSION" ]; then
-    echo "Usage: ./scripts/release.sh 1.0.0"
+    echo "Usage: ./scripts/release.sh 0.9.0"
     exit 1
 fi
 
-# Update package-info.json
+# Update version in package-info.json
 echo "Updating package-info.json version to $VERSION..."
 sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package-info.json
 
-# Build
-echo "Building release package..."
-./scripts/build_sign_package.sh --platform=all
-
-# Git commit and tag
-echo "Committing and tagging release..."
+# Commit version bump
 git add package-info.json
 git commit -m "Release v$VERSION"
 git tag "v$VERSION"
 
-echo "Release v$VERSION created and tagged locally."
-echo "Reminder: git push && git push --tags to publish."
+echo "Release v$VERSION committed and tagged."
+echo "Remember to push: git push && git push --tags"
