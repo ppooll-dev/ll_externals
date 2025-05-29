@@ -1279,13 +1279,25 @@ void ll_mcwaveform_paint(t_ll_mcwaveform *x, t_object *view){
     }
 
     // Draw line.
-    if(x->linepos >= 0){
+    if (x->linepos >= 0) {
+        // Center of the object for display scale lookup
+        t_pt pt;
+        pt.x = rect.x + rect.width * 0.5;
+        pt.y = rect.y + rect.height * 0.5;
+        double scale = jmonitor_getdisplayscalefactor_forpoint(pt);
+
         double line_position = (x->linepos - x->ms_list.start) / x->ms_list.length * rect.width;
+
+        // Apply scale correction only if necessary
+        if (scale > 1.01)
+            line_position /= scale;
+
         jgraphics_set_source_jrgba(g, &x->ll_linecolor);
         jgraphics_move_to(g, line_position, 0);
         jgraphics_line_to(g, line_position, rect.height);
         jgraphics_set_line_width(g, 1);
     }
+    
     jgraphics_stroke(g);
 }
 
