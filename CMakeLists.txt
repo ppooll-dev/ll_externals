@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ppooll_externals)
+project(ll_externals)
 
 if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE MinSizeRel CACHE STRING "Set the default build type to MinSizeRel" FORCE)
