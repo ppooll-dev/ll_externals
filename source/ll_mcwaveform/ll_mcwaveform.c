@@ -40,9 +40,6 @@
 #endif
 
 static t_class  *s_ll_mcwaveform_class = 0;
-static t_pt s_ll_mcwaveform_cum; // mouse tracking
-static t_pt s_ll_ccum;
-static t_pt s_ll_delta;
 
 typedef enum {
     MOUSE_MODE_NONE,
@@ -71,8 +68,6 @@ typedef struct _ll_mcwaveform
 {
     // Box
     t_jbox      ll_box;
-    double      ll_width;
-    double      ll_height;
     long        ll_rectsize;
     
     // Colors
@@ -137,7 +132,12 @@ typedef struct _ll_mcwaveform
     double      l_arr_len;
     
     t_object *stored_patcherview; // Used to set mouse cursor image when setmode attribute changes.
-
+    
+    t_symbol *wf_layer_name;
+    
+    t_pt ll_mcwaveform_cum; // mouse tracking
+    t_pt ll_ccum;
+    t_pt ll_delta;
 } t_ll_mcwaveform;
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ basic
@@ -422,10 +422,7 @@ void ext_main(void *r){
 void *ll_mcwaveform_new(t_symbol *s, short argc, t_atom *argv){
     t_ll_mcwaveform* x;
     long flags;
-    t_dictionary *d=NULL;
-    t_rect rect;
-    t_jgraphics *g;
-    t_object *view = NULL;
+    t_dictionary *d = NULL;
     
     if (!(d=object_dictionaryarg(argc,argv)))
         return NULL;
@@ -455,11 +452,6 @@ void *ll_mcwaveform_new(t_symbol *s, short argc, t_atom *argv){
    
     attr_dictionary_process(x,d); // handle attribute args
     jbox_ready(&x->ll_box);
-    g = (t_jgraphics*) patcherview_get_jgraphics(view);
-    jbox_get_rect_for_view((t_object *)x, view, &rect);
-
-    x->ll_width = rect.width - x->ll_rectsize;
-    x->ll_height = rect.height - x->ll_rectsize;
 
     x->ms_list.start = 0.;
     x->ms_list.length = 0.;
@@ -483,7 +475,6 @@ void *ll_mcwaveform_new(t_symbol *s, short argc, t_atom *argv){
     atom_setsym(buf_msg, unique_id);
     t_object *newBuf = object_new_typed(CLASS_BOX, gensym("buffer~"), 1, buf_msg);
     x->buffer = jbox_get_object(newBuf);
-
     if(!x->buffer){
         object_error((t_object *)x, "Error creating internal buffer.");
     }
@@ -491,6 +482,11 @@ void *ll_mcwaveform_new(t_symbol *s, short argc, t_atom *argv){
 
     x->m_clock = clock_new((t_ll_mcwaveform *)x, (method)ll_mcwaveform_task);
     x->m_qelem = qelem_new((t_ll_mcwaveform *)x, (method)ll_mcwaveform_qtask);
+    
+    // Unique wf paint layer
+    char layername_buf[64];
+    snprintf(layername_buf, sizeof(layername_buf), "wf_%s", unique_id->s_name);
+    x->wf_layer_name = gensym(layername_buf);
     
     post("External built on %s at %s", __DATE__, __TIME__);
 
@@ -514,7 +510,7 @@ void ll_mcwaveform_free(t_ll_mcwaveform *x){
 }
 
 void ll_mcwaveform_qtask(t_ll_mcwaveform *x, t_symbol *s, short argc, t_atom *argv){
-    ll_mcwaveform_reread(x,1);
+    ll_mcwaveform_reread(x,0);
 }
 
 void ll_mcwaveform_task(t_ll_mcwaveform *x){
@@ -522,7 +518,7 @@ void ll_mcwaveform_task(t_ll_mcwaveform *x){
 }
 
 t_max_err ll_mcwaveform_notify(t_ll_mcwaveform *x, t_symbol *s, t_symbol *msg, void *sender, void *data){
-     post("notification from %s: %s",s->s_name, msg->s_name);
+//     post("notification from %s: %s",s->s_name, msg->s_name);
     if(msg == gensym("globalsymbol_unbinding") || msg == gensym("globalsymbol_binding")){
         if(msg == gensym("globalsymbol_unbinding")){
             // post("buffer removed?");  // Buffer removed
@@ -978,7 +974,7 @@ t_max_err ll_mcwaveform_chans(t_ll_mcwaveform *x, t_symbol *s, long ac, t_atom *
     x->chans = new_chans;
     x->chan_offset = new_chans_offset;
     
-    jbox_invalidate_layer((t_object *)x, NULL, gensym("wf"));
+    jbox_invalidate_layer((t_object *)x, NULL, x->wf_layer_name);
     jbox_redraw(&x->ll_box);
     
     return MAX_ERR_NONE;
@@ -994,7 +990,7 @@ t_max_err ll_mcwaveform_vzoom_set(t_ll_mcwaveform *x, void *attr, long ac, t_ato
         f = atom_getfloat(av);
         x->vzoom = f;
 
-        jbox_invalidate_layer((t_object *)x, NULL, gensym("wf"));
+        jbox_invalidate_layer((t_object *)x, NULL, x->wf_layer_name);
         jbox_redraw(&x->ll_box);
     }
     return MAX_ERR_NONE;
@@ -1041,13 +1037,15 @@ void ll_mcwaveform_length(t_ll_mcwaveform *x, double f){
 void ll_mcwaveform_selstart(t_ll_mcwaveform *x, double f){
     if(f == x->ms_list.sel_start)
         return;
-    
+
     if(x->sel_keep_mode == SEL_KEEP_LENGTH){
-        double delta = f - x->ms_list.sel_start;
-        x->ms_list.sel_end += delta;
+        double length = x->ms_list.sel_end - x->ms_list.sel_start;
+        x->ms_list.sel_start = f;
+        x->ms_list.sel_end = f + length;
+    } else {
+        x->ms_list.sel_start = f;
     }
 
-    x->ms_list.sel_start = f;
     ll_mcwaveform_updatebounds(x, !x->set_only_mode);
 }
 
@@ -1058,13 +1056,15 @@ void ll_mcwaveform_selstart(t_ll_mcwaveform *x, double f){
 void ll_mcwaveform_selend(t_ll_mcwaveform *x, double f){
     if(f == x->ms_list.sel_end)
         return;
-    
+
     if(x->sel_keep_mode == SEL_KEEP_LENGTH){
-        double delta = f - x->ms_list.sel_end;
-        x->ms_list.sel_start += delta;
+        double length = x->ms_list.sel_end - x->ms_list.sel_start;
+        x->ms_list.sel_end = f;
+        x->ms_list.sel_start = f - length;
+    } else {
+        x->ms_list.sel_end = f;
     }
-    
-    x->ms_list.sel_end = f;
+
     ll_mcwaveform_updatebounds(x, !x->set_only_mode);
 }
 
@@ -1142,7 +1142,7 @@ t_max_err ll_mcwaveform_wfcolor_set(t_ll_mcwaveform *x, void *attr, long argc, t
         x->ll_wfcolor.alpha = atom_getfloat(argv+3);
         
         x->sf_read = 1;
-        jbox_invalidate_layer((t_object *)x, NULL, gensym("wf"));
+        jbox_invalidate_layer((t_object *)x, NULL, x->wf_layer_name);
         jbox_redraw(&x->ll_box);
     }
     return MAX_ERR_NONE;
@@ -1205,7 +1205,7 @@ t_max_err ll_mcwaveform_inv_sel_color_set(t_ll_mcwaveform *x, void *attr, long a
 */
 void ll_mcwaveform_reread(t_ll_mcwaveform *x, char should_output){
     x->sf_read = 1;
-    jbox_invalidate_layer((t_object *)x, NULL, gensym("wf"));
+    jbox_invalidate_layer((t_object *)x, NULL, x->wf_layer_name);
     ll_mcwaveform_updatebounds(x, should_output);
 }
 
@@ -1258,16 +1258,12 @@ void ll_mcwaveform_paint(t_ll_mcwaveform *x, t_object *view){
     jgraphics_set_source_jrgba(g, &x->ll_bgcolor);
     jgraphics_rectangle_fill_fast(g, 0, 0, rect.width, rect.height);
     
-    t_jgraphics *layer = jbox_start_layer((t_object *)x, view, gensym("wf"), rect.width, rect.height);
-    if (layer) {
-        ll_mcwaveform_paint_wf(x, layer, &rect); // Only when waveform layer is invalid
-        jbox_end_layer((t_object *)x, view, gensym("wf"));
-        post("wf repainted");
-
-    }else{
-        post("wf is still valid");
+    t_jgraphics *wf_layer = jbox_start_layer((t_object *)x, view, x->wf_layer_name, rect.width, rect.height);
+    if (wf_layer) {
+        ll_mcwaveform_paint_wf(x, wf_layer, &rect); // Only when waveform layer is invalid
+        jbox_end_layer((t_object *)x, view, x->wf_layer_name);
     }
-    jbox_paint_layer((t_object *)x, view, gensym("wf"), 0., 0.);
+    jbox_paint_layer((t_object *)x, view, x->wf_layer_name, 0., 0.);
     
     jgraphics_set_source_jrgba(g, &x->ll_selcolor);
     // Draw selected portion over waveform.
@@ -1293,7 +1289,8 @@ void ll_mcwaveform_paint(t_ll_mcwaveform *x, t_object *view){
 
     // Draw line.
     if (x->linepos >= 0) {
-        double line_position = (x->linepos - x->ms_list.start) / x->ms_list.length * rect.width;
+        double line_relpos = (x->linepos - x->ms_list.start) / x->ms_list.length;
+        double line_position = line_relpos * rect.width;
         
         jgraphics_set_source_jrgba(g, &x->ll_linecolor);
         jgraphics_move_to(g, line_position, 0);
@@ -1524,7 +1521,7 @@ void ll_mcwaveform_mousemove(t_ll_mcwaveform *x, t_object *patcherview, t_pt pt,
         Perform change to selection/display based on current mouse mode.
 */
 void ll_mcwaveform_mousedown(t_ll_mcwaveform *x, t_object *patcherview, t_pt pt, long modifiers) {
-    s_ll_mcwaveform_cum = pt;
+    x->ll_mcwaveform_cum = pt;
     
     t_rect rect;
     jbox_get_rect_for_view((t_object *)x, patcherview, &rect);
@@ -1543,7 +1540,7 @@ void ll_mcwaveform_mousedown(t_ll_mcwaveform *x, t_object *patcherview, t_pt pt,
         }
         case MOUSE_MODE_SELECT: {
             // In "select" mode, adjust selection start and end based on mouse position and modifiers.
-            s_ll_ccum = pt;
+            x->ll_ccum = pt;
             double cx = pt.x * x->ms_list.length / rect.width + x->ms_list.start;
             
             if (!shift) {
@@ -1552,9 +1549,9 @@ void ll_mcwaveform_mousedown(t_ll_mcwaveform *x, t_object *patcherview, t_pt pt,
             } else {
                 // Adjust selection based on proximity to start or end.
                 if (fabs(cx - x->ms_list.sel_start) < fabs(cx - x->ms_list.sel_end))
-                    s_ll_ccum.x = (x->ms_list.sel_end - x->ms_list.start) / x->ms_list.length * rect.width;
+                    x->ll_ccum.x = (x->ms_list.sel_end - x->ms_list.start) / x->ms_list.length * rect.width;
                 else
-                    s_ll_ccum.x = (x->ms_list.sel_start - x->ms_list.start) / x->ms_list.length * rect.width;
+                    x->ll_ccum.x = (x->ms_list.sel_start - x->ms_list.start) / x->ms_list.length * rect.width;
                 
                 if (cx < x->ms_list.sel_start)
                     x->ms_list.sel_start = cx;
@@ -1594,25 +1591,25 @@ void ll_mcwaveform_mousedrag(t_ll_mcwaveform *x, t_object *patcherview, t_pt pt,
     ll_mcwaveform_setmousecursor(x, patcherview, modifiers);
     
     char shift = modifiers / 2 % 2;
-    s_ll_delta.x = pt.x - s_ll_mcwaveform_cum.x;
-    s_ll_delta.y = shift ? 0 : pt.y - s_ll_mcwaveform_cum.y;
+    x->ll_delta.x = pt.x - x->ll_mcwaveform_cum.x;
+    x->ll_delta.y = shift ? 0 : pt.y - x->ll_mcwaveform_cum.y;
 
-    s_ll_mcwaveform_cum = pt; // Update the cumulative mouse position
+    x->ll_mcwaveform_cum = pt; // Update the cumulative mouse position
     t_rect rect;
     jbox_get_rect_for_view((t_object *)x, patcherview, &rect);
 
     double scaleFactor = x->ms_list.length / rect.width;
     double newXPosition = pt.x * scaleFactor + x->ms_list.start;
-    double deltaYXScale = (2 * s_ll_delta.y + s_ll_delta.x) * scaleFactor;
+    double deltaYXScale = (2 * x->ll_delta.y + x->ll_delta.x) * scaleFactor;
     switch (x->mouse_mode) {
         case MOUSE_MODE_SELECT: {
             // Calculate the start and end points based on the current and previous cursor positions
-            if (pt.x < s_ll_ccum.x) {
+            if (pt.x < x->ll_ccum.x) {
                 x->ms_list.sel_start = newXPosition;
-                x->ms_list.sel_end = s_ll_ccum.x * scaleFactor + x->ms_list.start;
+                x->ms_list.sel_end = x->ll_ccum.x * scaleFactor + x->ms_list.start;
             } else {
                 x->ms_list.sel_end = newXPosition;
-                x->ms_list.sel_start = s_ll_ccum.x * scaleFactor + x->ms_list.start;
+                x->ms_list.sel_start = x->ll_ccum.x * scaleFactor + x->ms_list.start;
             }
             ll_mcwaveform_bang(x);
             break;
@@ -1620,7 +1617,7 @@ void ll_mcwaveform_mousedrag(t_ll_mcwaveform *x, t_object *patcherview, t_pt pt,
         case MOUSE_MODE_LOOP: {
             // Adjust loop points based on mouse movement, ensuring loop end is always after loop start
             double adjustedStart = fmin(x->ms_list.sel_end - 0.0001, x->ms_list.sel_start + deltaYXScale);
-            double adjustedEnd = fmax(x->ms_list.sel_start + 0.0001, x->ms_list.sel_end + (-2 * s_ll_delta.y + s_ll_delta.x) * scaleFactor);
+            double adjustedEnd = fmax(x->ms_list.sel_start + 0.0001, x->ms_list.sel_end + (-2 * x->ll_delta.y + x->ll_delta.x) * scaleFactor);
 
             x->ms_list.sel_start = adjustedStart;
             x->ms_list.sel_end = adjustedEnd;
@@ -1630,7 +1627,7 @@ void ll_mcwaveform_mousedrag(t_ll_mcwaveform *x, t_object *patcherview, t_pt pt,
         }
         case MOUSE_MODE_MOVE: {
             // Move both the start and end of the selection
-            double moveYScale = 4 * s_ll_delta.y * scaleFactor;
+            double moveYScale = 4 * x->ll_delta.y * scaleFactor;
             x->ms_list.length += moveYScale;
             x->ms_list.start -= deltaYXScale;
             
