@@ -488,7 +488,7 @@ void *ll_mcwaveform_new(t_symbol *s, short argc, t_atom *argv){
     snprintf(layername_buf, sizeof(layername_buf), "wf_%s", unique_id->s_name);
     x->wf_layer_name = gensym(layername_buf);
     
-    post("External built on %s at %s", __DATE__, __TIME__);
+//    post("External built on %s at %s", __DATE__, __TIME__);
 
     return x;
 }
@@ -1290,12 +1290,13 @@ void ll_mcwaveform_paint(t_ll_mcwaveform *x, t_object *view){
     // Draw line.
     if (x->linepos >= 0) {
         double line_relpos = (x->linepos - x->ms_list.start) / x->ms_list.length;
-        double line_position = line_relpos * rect.width;
-        
+        double line_position = floor(line_relpos * rect.width) + 0.5;
+
         jgraphics_set_source_jrgba(g, &x->ll_linecolor);
         jgraphics_move_to(g, line_position, 0);
         jgraphics_line_to(g, line_position, rect.height);
         jgraphics_set_line_width(g, 1);
+        jgraphics_stroke(g);
     }
     
     jgraphics_stroke(g);
