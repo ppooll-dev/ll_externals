@@ -207,7 +207,7 @@ void ll_mcwaveform_updatebounds(t_ll_mcwaveform *x, char should_output);
 void ll_mcwaveform_reread(t_ll_mcwaveform *x, char should_output);
 
 void ll_mcwaveform_paint(t_ll_mcwaveform *x, t_object *view);
-void ll_mcwaveform_paint_wf(t_ll_mcwaveform *x, t_object *view, t_rect *rect);
+void ll_mcwaveform_paint_wf(t_ll_mcwaveform *x, t_jgraphics *g, t_rect *rect);
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ mouse & key
 void ll_mcwaveform_applymodifiers(t_ll_mcwaveform *x, long modifiers);
@@ -491,6 +491,9 @@ void *ll_mcwaveform_new(t_symbol *s, short argc, t_atom *argv){
 
     x->m_clock = clock_new((t_ll_mcwaveform *)x, (method)ll_mcwaveform_task);
     x->m_qelem = qelem_new((t_ll_mcwaveform *)x, (method)ll_mcwaveform_qtask);
+    
+    post("External built on %s at %s", __DATE__, __TIME__);
+
     return x;
 }
 
@@ -519,7 +522,7 @@ void ll_mcwaveform_task(t_ll_mcwaveform *x){
 }
 
 t_max_err ll_mcwaveform_notify(t_ll_mcwaveform *x, t_symbol *s, t_symbol *msg, void *sender, void *data){
-    // post("notification from %s: %s",s->s_name, msg->s_name);
+     post("notification from %s: %s",s->s_name, msg->s_name);
     if(msg == gensym("globalsymbol_unbinding") || msg == gensym("globalsymbol_binding")){
         if(msg == gensym("globalsymbol_unbinding")){
             // post("buffer removed?");  // Buffer removed
@@ -1002,8 +1005,10 @@ t_max_err ll_mcwaveform_vzoom_set(t_ll_mcwaveform *x, void *attr, long ac, t_ato
         Draw a line at the millisecond position.
 */
 void ll_mcwaveform_line(t_ll_mcwaveform *x, double f){
-    x->linepos = f < 0. ? -1. : f;
-    jbox_redraw(&x->ll_box);
+    if(f != x->linepos){
+        x->linepos = f < 0. ? -1. : f;
+        jbox_redraw(&x->ll_box);
+    }
 }
 
 /*
@@ -1253,7 +1258,15 @@ void ll_mcwaveform_paint(t_ll_mcwaveform *x, t_object *view){
     jgraphics_set_source_jrgba(g, &x->ll_bgcolor);
     jgraphics_rectangle_fill_fast(g, 0, 0, rect.width, rect.height);
     
-    ll_mcwaveform_paint_wf(x, view, &rect); // Draw waveform onto the layer
+    t_jgraphics *layer = jbox_start_layer((t_object *)x, view, gensym("wf"), rect.width, rect.height);
+    if (layer) {
+        ll_mcwaveform_paint_wf(x, layer, &rect); // Only when waveform layer is invalid
+        jbox_end_layer((t_object *)x, view, gensym("wf"));
+        post("wf repainted");
+
+    }else{
+        post("wf is still valid");
+    }
     jbox_paint_layer((t_object *)x, view, gensym("wf"), 0., 0.);
     
     jgraphics_set_source_jrgba(g, &x->ll_selcolor);
@@ -1281,7 +1294,7 @@ void ll_mcwaveform_paint(t_ll_mcwaveform *x, t_object *view){
     // Draw line.
     if (x->linepos >= 0) {
         double line_position = (x->linepos - x->ms_list.start) / x->ms_list.length * rect.width;
-
+        
         jgraphics_set_source_jrgba(g, &x->ll_linecolor);
         jgraphics_move_to(g, line_position, 0);
         jgraphics_line_to(g, line_position, rect.height);
@@ -1297,7 +1310,7 @@ void ll_mcwaveform_paint(t_ll_mcwaveform *x, t_object *view){
         In sf_mode, we read and write from an internal buffer when necessary.
         Otherwise, we read directly from the buffer referenced by the user.
 */
-void ll_mcwaveform_paint_wf(t_ll_mcwaveform *x, t_object *view, t_rect *rect) {
+void ll_mcwaveform_paint_wf(t_ll_mcwaveform *x, t_jgraphics *g, t_rect *rect) {
     long i, j, k, co;
     float stepsize, ro, dispstart_ms, maxf, minf, samplef, v_zeropos, line_len;
     short peek_amt;
@@ -1309,10 +1322,6 @@ void ll_mcwaveform_paint_wf(t_ll_mcwaveform *x, t_object *view, t_rect *rect) {
 
     t_float *tab;
     t_buffer_obj *buffer = buffer_ref_getobject(x->l_buffer_reference);
-
-    t_jgraphics *g = jbox_start_layer((t_object *)x, view, gensym("wf"), rect->width, rect->height);
-    if(!g)
-        return; // waveform layer is valid --  do not repaint
 
     jgraphics_set_source_jrgba(g, &x->ll_wfcolor);
 
@@ -1436,7 +1445,6 @@ void ll_mcwaveform_paint_wf(t_ll_mcwaveform *x, t_object *view, t_rect *rect) {
     }
     jgraphics_set_line_width(g, 1);
     jgraphics_stroke(g);
-    jbox_end_layer((t_object *)x, view, gensym("wf"));
 }
 
 
