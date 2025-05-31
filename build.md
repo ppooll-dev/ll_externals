@@ -1,78 +1,103 @@
 # Building and Releasing a New Version
 
-This section is for **maintainers** preparing an official new release.
-
-## Quick Summary:
-
-1. Build the package manually
-2. Verify build output
-3. Bump version and tag release
-4. Push to GitHub
-5. Upload the zip
-6. (Optional) Clean build artifacts
+Instructions for maintainers preparing a new versioned release of the externals package.
 
 ---
 
-## Detailed Steps:
+# Developer Setup
 
-### 1. Build the Release Package
+To build and sign macOS externals, ensure you have a working codesigning environment:
 
 ```bash
-./scripts/build_sign_package.sh --platform=all
+git clone --recurse-submodules https://github.com/ppooll-dev/ll_externals.git
+cd ll_externals
+cp .env.template .env
+# Edit .env with:
+# - DEVELOPER_ID
+# - APPLE_ID
+# - TEAM_ID
+# - APP_SPECIFIC_PASSWORD
+```
+
+---
+
+# Bumping Version
+
+To update the version number in `package-info.json`:
+
+```bash
+./scripts/bump_version.sh 1.0.0
+```
+
+This **only updates** the version field (does not commit).
+
+---
+
+# Building and Signing a New Release
+
+```bash
+./scripts/build_package.sh
 ```
 
 This will:
-- Build macOS `.mxo` externals
-- Build Windows `.mxe64` externals
-- Code-sign and notarize macOS externals
-- Assemble a clean `/package/` folder
-- Create `ll_externals.zip` in the repo root
 
-### 2. Verify
+* Build `.mxo` (macOS) and `.mxe64` (Windows) externals
+* Sign all macOS `.mxo` externals
+* Assemble `/package/` folder with documentation
+* Zip as `ll_externals.zip`
+* Submit for notarization
+* Staple notarization ticket to zip
 
-- Check that `ll_externals.zip` was created.
-- Ensure externals, docs, and help patches are correct.
+---
 
-### 3. Bump Version and Tag Release
+# 🍿 Releasing
 
 After verifying the build:
 
 ```bash
-./scripts/release.sh 0.9.0
-```
-
-This will:
-- Update the version number in `package-info.json`
-- Commit the change
-- Create a Git tag
-
-### 4. Push to GitHub
-
-```bash
+./scripts/release.sh
 git push
 git push --tags
 ```
 
-### 5. Upload the Release to GitHub
+---
 
-- Go to the [Releases page](https://github.com/ppooll-dev/ll_externals/releases)
-- Click **"Draft a new release"**
-- Set:
-  - **Tag:** e.g., `v1.0.0`
-  - **Release title:** e.g., `ll_externals v1.0.0`
-- **Attach the `ll_externals.zip` file**
-- Click **Publish**.
+# Publishing a GitHub Release
 
-### 6. (Optional) Clean the Repo After Release
+1. Go to: [GitHub Releases](https://github.com/ppooll-dev/ll_externals/releases)
+2. Click **“Draft a new release”**
+3. Fill out:
+
+   * **Tag name**: `v1.0.0`
+   * **Release title**: `ll_externals v1.0.0`
+4. Upload the `ll_externals.zip` file
+5. Click **Publish**
+
+---
+
+# 🧹 Cleaning Build Artifacts
+
+After the release is published:
 
 ```bash
 ./scripts/clean.sh
 ```
 
-This deletes:
-- `build-mac/`
-- `build-win/`
-- `package/`
-- `ll_externals.zip`
+This removes:
+
+* `build-mac/`
+* `build-win/`
+* `package/`
+* `ll_externals.zip`
 
 ---
+
+# Notes
+
+* Only `.mxo` files are signed and notarized (macOS only)
+* Final `ll_externals.zip` must include:
+
+  * `README.md`
+  * `LICENSE.md`
+  * `CHANGELOG.md`
+  * `package-info.json`

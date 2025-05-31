@@ -5,21 +5,17 @@
 # Bump version, commit, and tag (no build!)
 # =========================
 
-VERSION="$1"
+set -e
 
-if [ -z "$VERSION" ]; then
-    echo "Usage: ./scripts/release.sh 0.9.0"
+VERSION=$(jq -r .version package-info.json)
+
+if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+    echo "Error: Could not find version in package-info.json"
     exit 1
 fi
 
-# Update version in package-info.json
-echo "Updating package-info.json version to $VERSION..."
-sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package-info.json
-
-# Commit version bump
 git add package-info.json
 git commit -m "Release v$VERSION"
 git tag "v$VERSION"
 
-echo "Release v$VERSION committed and tagged."
-echo "Remember to push: git push && git push --tags"
+echo "Committed and tagged version v$VERSION"
