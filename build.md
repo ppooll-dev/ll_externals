@@ -50,15 +50,9 @@ This will:
 
 ---
 
-# 🍿 Releasing
+# Commit changes and tag
 
-After verifying the build:
-
-```bash
-./scripts/release.sh
-git push
-git push --tags
-```
+Commit the `package-info.json` and newly built externals.
 
 ---
 
