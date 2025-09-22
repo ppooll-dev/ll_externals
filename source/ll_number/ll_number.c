@@ -582,12 +582,6 @@ void ll_number_paint(t_ll_number *x, t_object *view) {
     jgraphics_set_source_jrgba(g, &bg_color);
     jgraphics_rectangle_fill_fast(g, 0, 0, rect.width, rect.height);
 
-    // Border
-    jgraphics_set_source_jrgba(g, &x->ll_bordercolor);
-    jgraphics_rectangle(g, 0, 0, rect.width, rect.height);
-    jgraphics_set_line_width(g, x->ll_border);
-    jgraphics_stroke(g);
-
     h = (rect.height - x->ll_border) / x->ll_amount;
     x->ll_inset = x->ll_border / 2;
     x->ll_width = rect.width - x->ll_border - x->ll_sliderstyle * 2 + 1;
@@ -629,6 +623,12 @@ void ll_number_paint(t_ll_number *x, t_object *view) {
             ll_number_draw_label(x, g, x->ll_label_list[i], up, h);
         }
     }
+    
+    // Border
+    jgraphics_set_source_jrgba(g, &x->ll_bordercolor);
+    jgraphics_rectangle(g, 0, 0, rect.width, rect.height);
+    jgraphics_set_line_width(g, x->ll_border);
+    jgraphics_stroke(g);
 }
 
 // Draw value (as text)
@@ -638,9 +638,13 @@ void ll_number_draw_text(t_ll_number *x, t_jgraphics *g, short i, double up, dou
     double value = x->ll_is_typing && i == x->ll_selected_row ? atof(x->ll_buffer) : atom_getfloat(&x->ll_vala[i]);
 
     ll_number_printf(x, value);  // Prepare value text for drawing
-    jtextlayout_set(jtl, x->ll_pval, jf, x->ll_inset, up,
-                    x->ll_width - (1 - x->ll_sliderstyle * 2) - 1, h,
-                    JGRAPHICS_TEXT_JUSTIFICATION_RIGHT, JGRAPHICS_TEXTLAYOUT_NOWRAP);
+    jtextlayout_set(
+        jtl, x->ll_pval, jf,
+        x->ll_inset, up,
+        x->ll_width - (1 - x->ll_sliderstyle * 2) - 1, h,
+        JGRAPHICS_TEXT_JUSTIFICATION_RIGHT | JGRAPHICS_TEXT_JUSTIFICATION_VCENTERED,
+        JGRAPHICS_TEXTLAYOUT_NOWRAP
+    );
 
     long string_length = jtextlayout_getnumchars(jtl);
     // Store jtl reference for selected item
@@ -678,8 +682,13 @@ void ll_number_draw_label(t_ll_number *x, t_jgraphics *g, const char *label, dou
     t_jfont *jf = jfont_create(jbox_get_fontname((t_object *)x)->s_name, 0, 0, jbox_get_fontsize((t_object *)x));
     t_jtextlayout *jtl = jtextlayout_create();
 
-    jtextlayout_set(jtl, label, jf, x->ll_inset + 2, up, x->ll_width, h - 2,
-                    JGRAPHICS_TEXT_JUSTIFICATION_VCENTERED, JGRAPHICS_TEXTLAYOUT_NOWRAP);
+    jtextlayout_set(
+        jtl, label, jf,
+        x->ll_inset + 2, up,
+        x->ll_width, h, // ← remove the "- 2"
+        JGRAPHICS_TEXT_JUSTIFICATION_VCENTERED,
+        JGRAPHICS_TEXTLAYOUT_NOWRAP
+    );
     jtextlayout_settextcolor(jtl, &x->ll_labelcolor);
     jtextlayout_draw(jtl, g);
 
