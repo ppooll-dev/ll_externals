@@ -142,6 +142,7 @@ typedef struct _ll_number
     char        *ll_label_list[MAX_NUM_VALUES];
     
     char        ll_prepend_label;
+    char        ll_prepend_name;
     char        ll_hide_on_change;
 } t_ll_number;
 
@@ -340,6 +341,10 @@ void ext_main(void *r){
     CLASS_ATTR_CHAR(c,              "prependlabel", 0, t_ll_number, ll_prepend_label);
     CLASS_ATTR_DEFAULT_SAVE_PAINT(c,"prependlabel", 0, "0");
     CLASS_ATTR_STYLE_LABEL(c,       "prependlabel", 0, "onoff", "Prepend with label values");
+    
+    CLASS_ATTR_CHAR(c,              "prependname", 0, t_ll_number, ll_prepend_name);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c,"prependname", 0, "0");
+    CLASS_ATTR_STYLE_LABEL(c,       "prependname", 0, "onoff", "Prepend list with varname");
     
     CLASS_ATTR_CHAR(c,              "hideonenter", 0, t_ll_number, ll_hide_on_change);
     CLASS_ATTR_DEFAULT_SAVE_PAINT(c,"hideonenter", 0, "0");
@@ -698,6 +703,14 @@ void ll_number_draw_label(t_ll_number *x, t_jgraphics *g, const char *label, dou
 
 // Handle bang
 void ll_number_bang(t_ll_number *x){
+    if (x->ll_prepend_name) {
+        // e.g. "mybox 0.5 0.7 1.0"
+        t_symbol* varname_sym = object_attr_getsym((t_object *)x, gensym("varname"));
+        if(varname_sym && varname_sym != gensym("")){
+            outlet_anything(x->ll_box.b_ob.o_outlet, varname_sym, (short)x->ll_amount, x->ll_vala);
+            return;
+        }
+    }
     if(x->ll_prepend_label){
         for (int i = 0; i < x->ll_amount; i++) {
             if (atom_gettype(&x->ll_label[i]) == A_SYM) {
@@ -1018,10 +1031,9 @@ void ll_number_getdrawparams(t_ll_number *x, t_object *patcherview, t_jboxdrawpa
 t_max_err ll_number_notify(t_ll_number *x, t_symbol *s, t_symbol *msg, void *sender, void *data){
     long argc = 0;
     t_atom *argv = NULL;
-    t_symbol *name;
     
     if (msg == _sym_attr_modified) {
-        name = (t_symbol *)object_method((t_object *)data,_sym_getname);
+        t_symbol *name = (t_symbol *)object_method((t_object *)data,_sym_getname);
         if (name == _sym_color) {
             object_attr_getvalueof(x, _sym_color, &argc, &argv);
             if (argc && argv) {
