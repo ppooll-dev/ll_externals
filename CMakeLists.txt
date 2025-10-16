@@ -18,6 +18,7 @@ include_directories(${MAX_SDK_BASE_PATH}/include)
 # Add subdirectories for each of the Max MSP objects
 add_subdirectory(source/ll_2dslider)
 add_subdirectory(source/ll_fastforward)
+add_subdirectory(source/ll_filewatchers)
 add_subdirectory(source/ll_mcwaveform)
 add_subdirectory(source/ll_number)
 add_subdirectory(source/ll_slishi)

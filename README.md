@@ -16,6 +16,7 @@ Max/MSP externals used in [ppooll](https://github.com/ppooll-dev/ppooll) and ava
 -   **ll_2dslider** – GUI array of dots
 -   **ll_fastforward** – Send to the header of a message
 -   **ll_slishi** – GUI slider with three levels of control
+-   **ll_filewatchers** – watch many files & folders
 
 ---
 
