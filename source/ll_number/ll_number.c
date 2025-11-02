@@ -704,32 +704,54 @@ void ll_number_draw_label(t_ll_number *x, t_jgraphics *g, const char *label, dou
 // Handle bang
 void ll_number_bang(t_ll_number *x){
     if (x->ll_prepend_name) {
-        // e.g. "mybox 0.5 0.7 1.0"
         t_symbol* varname_sym = object_attr_getsym((t_object *)x, gensym("varname"));
-        if(varname_sym && varname_sym != gensym("")){
+        if (varname_sym && varname_sym != gensym("")) {
             outlet_anything(x->ll_box.b_ob.o_outlet, varname_sym, (short)x->ll_amount, x->ll_vala);
             return;
         }
     }
-    if(x->ll_prepend_label){
+
+    if (x->ll_prepend_label) {
         for (int i = 0; i < x->ll_amount; i++) {
             if (atom_gettype(&x->ll_label[i]) == A_SYM) {
-                outlet_anything(x->ll_box.b_ob.o_outlet, atom_getsym(&x->ll_label[i]), 1, &x->ll_vala[i]);
+                // label + single value
+                if (x->ll_format_is_int) {
+                    t_atom a;
+                    atom_setlong(&a, (long)atom_getfloat(&x->ll_vala[i]));
+                    outlet_anything(x->ll_box.b_ob.o_outlet, atom_getsym(&x->ll_label[i]), 1, &a);
+                } else {
+                    outlet_anything(x->ll_box.b_ob.o_outlet, atom_getsym(&x->ll_label[i]), 1, &x->ll_vala[i]);
+                }
             } else {
                 t_atom output[2];
                 atom_setlong(&output[0], i + 1);
-                atom_setfloat(&output[1], atom_getfloat(&x->ll_vala[i]));
+                if (x->ll_format_is_int)
+                    atom_setlong(&output[1], (long)atom_getfloat(&x->ll_vala[i]));
+                else
+                    atom_setfloat(&output[1], atom_getfloat(&x->ll_vala[i]));
                 outlet_list(x->ll_box.b_ob.o_outlet, NULL, 2, output);
             }
         }
         return;
     }
-    if(x->ll_amount == 1){
-        // If single slider mode, need outlet_float for single atom
+
+    if (x->ll_amount == 1) {
         double value = ll_number_get_value(x, 0);
-        outlet_float(x->ll_box.b_ob.o_outlet, value);
-    }else{
-        outlet_list(x->ll_box.b_ob.o_outlet, NULL, x->ll_amount, x->ll_vala);
+        if (x->ll_format_is_int)
+            outlet_int(x->ll_box.b_ob.o_outlet, (long)value);
+        else
+            outlet_float(x->ll_box.b_ob.o_outlet, value);
+    } else {
+        if (x->ll_format_is_int) {
+            // build integer list
+            t_atom output[x->ll_amount];
+            for (int i = 0; i < x->ll_amount; i++) {
+                atom_setlong(&output[i], (long)atom_getfloat(&x->ll_vala[i]));
+            }
+            outlet_list(x->ll_box.b_ob.o_outlet, NULL, x->ll_amount, output);
+        } else {
+            outlet_list(x->ll_box.b_ob.o_outlet, NULL, x->ll_amount, x->ll_vala);
+        }
     }
 }
 
@@ -1110,6 +1132,8 @@ void ll_number_mousedown(t_ll_number *x, t_object *patcherview, t_pt pt, long mo
     //           (if not selected, select by command clicking a digit)
     //           use enter to finish typing and output the value
     //           use esc to exit typing without change.
+    
+    ll_number_endtyping(x);
     
     x->ll_number_cum = pt;
     short pos = ll_number_get_selchar_from_text(x, pt);
