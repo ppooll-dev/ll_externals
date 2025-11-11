@@ -15,6 +15,18 @@
         "boxes": [
             {
                 "box": {
+                    "attr": "drawarrow",
+                    "id": "obj-29",
+                    "maxclass": "attrui",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 185.0, 491.0, 150.0, 22.0 ]
+                }
+            },
+            {
+                "box": {
                     "attr": "items",
                     "id": "obj-34",
                     "maxclass": "attrui",
@@ -22,7 +34,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 185.0, 491.0, 469.0, 22.0 ]
+                    "patching_rect": [ 185.0, 515.0, 469.0, 22.0 ]
                 }
             },
             {
@@ -42,7 +54,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 565.5, 420.0, 99.0, 20.0 ],
+                    "patching_rect": [ 565.5, 420.0, 102.0, 20.0 ],
                     "text": "stores as symbol "
                 }
             },
@@ -499,6 +511,13 @@
             {
                 "patchline": {
                     "destination": [ "obj-1", 0 ],
+                    "midpoints": [ 194.5, 516.0, 81.0, 516.0, 81.0, 189.0, 211.5, 189.0 ],
+                    "source": [ "obj-29", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-1", 0 ],
                     "source": [ "obj-3", 0 ]
                 }
             },
@@ -511,7 +530,7 @@
             {
                 "patchline": {
                     "destination": [ "obj-1", 0 ],
-                    "midpoints": [ 194.5, 516.0, 81.0, 516.0, 81.0, 189.0, 211.5, 189.0 ],
+                    "midpoints": [ 194.5, 545.25, 81.0, 545.25, 81.0, 189.0, 211.5, 189.0 ],
                     "source": [ "obj-34", 0 ]
                 }
             },

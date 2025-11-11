@@ -11,8 +11,9 @@ typedef struct _ll_popupmenu {
     t_symbol *checked;   // symbol to mark as checked
     
     char objectclick;
-    
     char position_mode;
+    
+    char draw_arrow;
     
     t_jrgba     bgcolor;
     t_jrgba     textcolor;
@@ -67,7 +68,11 @@ void ext_main(void *r)
     class_addmethod(c, (method)ll_popupmenu_setvalue, "setvalueof", A_CANT, 0);
 
     CLASS_ATTR_DEFAULT(c, "patching_rect", 0, "0. 0. 100. 24.");
-
+    
+    CLASS_ATTR_CHAR(c, "drawarrow", 0, t_ll_popupmenu, draw_arrow);
+    CLASS_ATTR_STYLE_LABEL(c, "drawarrow", 0, "onoff", "Draw Arrow");
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "drawarrow", 0, "1");
+    
     // COLOR ATTRIBUTES
     CLASS_STICKY_ATTR(c, "category", 0, "Color");
 
@@ -477,12 +482,14 @@ void ll_popupmenu_paint(t_ll_popupmenu *x, t_object *view)
     jtextlayout_destroy(layout);
 
     // dropdown triangle
-    jgraphics_set_source_jrgba(g, &txt);
-    jgraphics_move_to(g, rect.width - 10, rect.height / 2 - 3);
-    jgraphics_line_to(g, rect.width - 5,  rect.height / 2 - 3);
-    jgraphics_line_to(g, rect.width - 7.5, rect.height / 2 + 2);
-    jgraphics_close_path(g);
-    jgraphics_fill(g);
+    if (x->draw_arrow) {
+        jgraphics_set_source_jrgba(g, &txt);
+        jgraphics_move_to(g, rect.width - 10, rect.height / 2 - 3);
+        jgraphics_line_to(g, rect.width - 5,  rect.height / 2 - 3);
+        jgraphics_line_to(g, rect.width - 7.5, rect.height / 2 + 2);
+        jgraphics_close_path(g);
+        jgraphics_fill(g);
+    }
 
     // border
     jgraphics_set_source_jrgba(g, &border);
