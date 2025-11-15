@@ -56,8 +56,8 @@
                     "outlettype": [ "", "", "", "" ],
                     "patching_rect": [ 609.38, 117.66, 56.0, 22.0 ],
                     "restore": {
-                        "ll_popupmenu": [ "four" ],
-                        "umenu": [ 0 ]
+                        "ll_menu": [ "one" ],
+                        "umenu": [ "one" ]
                     },
                     "text": "autopattr",
                     "varname": "u358001695"
@@ -211,8 +211,8 @@
                     "maxclass": "newobj",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 323.0, 337.0, 111.0, 22.0 ],
-                    "text": "print ll_popupmenu"
+                    "patching_rect": [ 323.0, 337.0, 77.0, 22.0 ],
+                    "text": "print ll_menu"
                 }
             },
             {
@@ -274,7 +274,7 @@
                     "pattrmode": 1,
                     "positionmode": 1,
                     "prefix": "",
-                    "varname": "ll_popupmenu"
+                    "varname": "ll_menu"
                 }
             },
             {
@@ -298,6 +298,7 @@
                     "outlettype": [ "int", "", "" ],
                     "parameter_enable": 0,
                     "patching_rect": [ 147.0, 180.0, 100.0, 22.0 ],
+                    "pattrmode": 1,
                     "varname": "umenu"
                 }
             }
