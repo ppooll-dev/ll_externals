@@ -19,6 +19,9 @@ typedef struct _ll_menu {
     void    *outlet_index, *outlet_symbol, *outlet_status;
 
     t_linklist *items;   // store the menu items dynamically
+    
+    t_object ob;
+    
     t_symbol *prepend;   // optional symbol to prepend on output
 
     char checkmode;   // 0 = manual, 1 = last_selected, 2 = toggles
@@ -85,10 +88,6 @@ t_max_err ll_menu_setvalue(t_ll_menu *x, long ac, t_atom *av);
 
 t_max_err ll_menu_getitems(t_ll_menu *x, void *attr, long *argc, t_atom **argv);
 t_max_err ll_menu_setitems(t_ll_menu *x, void *attr, long argc, t_atom *argv);
-
-// helpers - item_text
-void ll_menu_rebuild_items_from_text(t_ll_menu *x);
-void ll_menu_update_items_text(t_ll_menu *x);
 
 // helpers - items
 t_symbol *ll_menu_get_item_symbol(t_atomarray *it);
@@ -195,7 +194,7 @@ void ext_main(void *r)
     // behavior attributes
     CLASS_STICKY_ATTR(c, "category", 0, "Behavior");
 
-    CLASS_ATTR_ATOM(c, "items", 0, t_ll_menu, items_text);
+    CLASS_ATTR_ATOM(c, "items", 0, t_ll_menu, ob);
     CLASS_ATTR_STYLE(c, "items", 0, "text_large");
     CLASS_ATTR_ACCESSORS(c, "items", ll_menu_getitems, ll_menu_setitems);
     CLASS_ATTR_LABEL(c, "items", 0, "Menu Items");
@@ -241,7 +240,46 @@ void ll_menu_getdrawparams(t_ll_menu *x, t_object *patcherview, t_jboxdrawparams
 // Show popup menu on bang
 void ll_menu_bang(t_ll_menu *x)
 {
-    // TODO: output value
+    long index = x->selected_item;
+
+    long count = x->items ? linklist_getsize(x->items) : 0;
+    if (count == 0)
+        return;
+
+    if (index < 0 || index >= count)
+        return;
+
+    t_atomarray *it = linklist_getindex(x->items, index);
+    if (!ll_menu_item_is_selectable(it))
+        return;
+
+    // -------- update selection + checkflags --------
+    ll_menu_set_selected_internal(x, index);
+
+    // -------- output list --------
+    long ac = 0;
+    t_atom *av = NULL;
+    atomarray_getatoms(it, &ac, &av);
+
+    // PREPEND mode
+    if (x->prepend && x->prepend != gensym("")) {
+        t_atom *outv = (t_atom *)sysmem_newptr((ac + 1) * sizeof(t_atom));
+
+        atom_setsym(outv, x->prepend);
+        if (ac > 0)
+            sysmem_copyptr(av, outv + 1, ac * sizeof(t_atom));
+
+        outlet_list(x->outlet_symbol, NULL, ac + 1, outv);
+        sysmem_freeptr(outv);
+    } else {
+        outlet_list(x->outlet_symbol, NULL, ac, av);
+    }
+
+    // -------- output index --------
+    outlet_int(x->outlet_index, index);
+
+//  // notify pattr/parameter
+//    object_notify(x, gensym("modified"), NULL);
 }
 
 // Dump menu items
@@ -282,7 +320,7 @@ void ll_menu_dump(t_ll_menu *x)
 
 void ll_menu_anything(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv)
 {
-    post("ANYTHING: %s", s->s_name);
+//    post("ANYTHING: %s", s->s_name);
 }
 
 // Show popup menu on bang
@@ -491,6 +529,7 @@ void ll_menu_free(t_ll_menu *x)
     
     if (x->items)
         object_free(x->items);
+    
     jbox_free((t_jbox *)x);
 }
 
@@ -519,15 +558,15 @@ void *ll_menu_new(t_symbol *s, long argc, t_atom *argv)
     jbox_new(&x->j_box, flags, argc, argv);
     x->j_box.b_firstin = (t_object *)x;
 
-    x->prepend = gensym("");
     x->items   = NULL;
+
+    x->prepend = gensym("");
     x->objectclick = 0;
     
     x->selected_item = 0;
     x->checked_flags = NULL;   // allocated later when items exist
     x->checkmode = 0;          // DEFAULT: manual (matches umenu behavior)
     
-    x->items_text[0] = 0;  // ensure empty string
     
     x->outlet_status = outlet_new((t_object *)x, NULL);     // right: dump
     x->outlet_symbol = outlet_new((t_object *)x, NULL);     // middle: symbol
@@ -634,7 +673,7 @@ void ll_menu_paint(t_ll_menu *x, t_object *view)
 void ll_menu_mousedown(t_ll_menu *x, t_object *patcherview, t_pt pt, long modifiers)
 {
     x->objectclick = 1;
-    ll_menu_bang(x);
+    ll_menu_show(x);
 }
 
 t_max_err ll_menu_getvalue(t_ll_menu *x, long *ac, t_atom **av)
@@ -667,6 +706,41 @@ t_max_err ll_menu_getvalue(t_ll_menu *x, long *ac, t_atom **av)
     return MAX_ERR_NONE;
 }
 
+// Compare two atom lists for exact equality
+static bool atoms_equal(long ac1, t_atom *av1, long ac2, t_atom *av2)
+{
+    if (ac1 != ac2)
+        return false;
+
+    for (long i = 0; i < ac1; i++) {
+        if (av1[i].a_type != av2[i].a_type)
+            return false;
+
+        switch (av1[i].a_type) {
+        case A_SYM:
+            if (av1[i].a_w.w_sym != av2[i].a_w.w_sym)
+                return false;
+            break;
+        case A_LONG:
+            if (av1[i].a_w.w_long != av2[i].a_w.w_long)
+                return false;
+            break;
+        case A_FLOAT:
+            if (av1[i].a_w.w_float != av2[i].a_w.w_float)
+                return false;
+            break;
+        default:
+            // fallback raw compare
+            if (memcmp(&av1[i].a_w, &av2[i].a_w, sizeof(av1[i].a_w)) != 0)
+                return false;
+            break;
+        }
+    }
+
+    return true;
+}
+
+
 t_max_err ll_menu_setvalue(t_ll_menu *x, long ac, t_atom *av)
 {
     if (ac < 1 || !av)
@@ -676,16 +750,36 @@ t_max_err ll_menu_setvalue(t_ll_menu *x, long ac, t_atom *av)
     if (count == 0)
         return MAX_ERR_NONE;
 
-    // restore by index
-    if (x->pattr_stores_sym == 0 && atom_gettype(av) == A_LONG) {
-        long index = atom_getlong(av);
+    t_atom *in = av;
+    long in_ac = ac;
+
+    // 1) RESTORE BY INDEX (umenu-equivalent)
+    if (x->pattr_stores_sym == 0 && in_ac == 1 && atom_gettype(in) == A_LONG) {
+        long index = atom_getlong(in);
         ll_menu_set_selected_internal(x, index);
         return MAX_ERR_NONE;
     }
 
-    // restore by symbol
-    if (atom_gettype(av) == A_SYM) {
-        t_symbol *s = atom_getsym(av);
+    // 2) MATCH AGAINST FULL ITEM ATOM LIST (exact match)
+    for (long i = 0; i < count; i++) {
+
+        t_atomarray *it = (t_atomarray*)linklist_getindex(x->items, i);
+        if (!it || !ll_menu_item_is_selectable(it))
+            continue;
+
+        long ac2 = 0;
+        t_atom *av2 = NULL;
+        atomarray_getatoms(it, &ac2, &av2);
+
+        if (atoms_equal(in_ac, in, ac2, av2)) {
+            ll_menu_set_selected_internal(x, i);
+            return MAX_ERR_NONE;
+        }
+    }
+
+    // 3) SYMBOL-ONLY MATCH (legacy umenu behavior)
+    if (in_ac == 1 && atom_gettype(in) == A_SYM) {
+        t_symbol *s = atom_getsym(in);
 
         for (long i = 0; i < count; i++) {
             t_atomarray *it = linklist_getindex(x->items, i);
@@ -696,22 +790,57 @@ t_max_err ll_menu_setvalue(t_ll_menu *x, long ac, t_atom *av)
             t_atom *av2 = NULL;
             atomarray_getatoms(it, &ac2, &av2);
 
-            if (ac2 > 0 &&
-                atom_gettype(av2) == A_SYM &&
-                atom_getsym(av2) == s)
-            {
+            if (ac2 > 0 && av2[0].a_type == A_SYM && av2[0].a_w.w_sym == s) {
                 ll_menu_set_selected_internal(x, i);
                 return MAX_ERR_NONE;
             }
         }
     }
 
-    // fallback to FIRST selectable
+    // 4) NUMERIC MATCH FOR FLOATS/LONGS (optional)
+    if (in_ac == 1 && (atom_gettype(in) == A_LONG || atom_gettype(in) == A_FLOAT)) {
+
+        double v = atom_getfloat(in);
+
+        for (long i = 0; i < count; i++) {
+            t_atomarray *it = linklist_getindex(x->items, i);
+            if (!it || !ll_menu_item_is_selectable(it))
+                continue;
+
+            long ac2 = 0;
+            t_atom *av2 = NULL;
+            atomarray_getatoms(it, &ac2, &av2);
+
+            if (ac2 == 1 && atom_getfloat(av2) == v) {
+                ll_menu_set_selected_internal(x, i);
+                return MAX_ERR_NONE;
+            }
+        }
+    }
+
+    // 5) FALLBACK TO FIRST SELECTABLE
     long first = ll_menu_first_selectable_index(x);
     if (first >= 0)
         ll_menu_set_selected_internal(x, first);
 
     return MAX_ERR_NONE;
+}
+
+void ll_menu_ensure_checked_flags(t_ll_menu *x)
+{
+    long count = x->items ? linklist_getsize(x->items) : 0;
+
+    // free old array
+    if (x->checked_flags) {
+        sysmem_freeptr(x->checked_flags);
+        x->checked_flags = NULL;
+    }
+
+    if (count > 0) {
+        x->checked_flags = (char*)sysmem_newptrclear(count * sizeof(char));
+    }
+
+    x->items_count = count;
 }
 
 
@@ -723,10 +852,6 @@ void ll_menu_clear(t_ll_menu *x)
     // resize flags to zero
     ll_menu_resize_checked_flags(x, 0);
 
-    // reset items_text
-    strncpy(x->items_text, "<empty>", sizeof(x->items_text)-1);
-    x->items_text[sizeof(x->items_text)-1] = 0;
-
     // selected_item will become 0 inside validate
     ll_menu_validate_selected_item(x);
 
@@ -734,7 +859,6 @@ void ll_menu_clear(t_ll_menu *x)
                   object_attr_get((t_object*)x, gensym("items")));
     jbox_redraw((t_jbox*)x);
 }
-
 
 void ll_menu_append(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv)
 {
@@ -749,8 +873,6 @@ void ll_menu_append(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv)
     long new_count = linklist_getsize(x->items);
     ll_menu_resize_checked_flags(x, new_count);
     ll_menu_validate_selected_item(x);
-
-    ll_menu_update_items_text(x);
 
     object_notify(x, gensym("attr_modified"),
                   object_attr_get((t_object*)x, gensym("items")));
@@ -773,7 +895,6 @@ void ll_menu_insert(t_ll_menu *x, long index, long argc, t_atom *argv)
     ll_menu_resize_checked_flags(x, new_count);
     ll_menu_validate_selected_item(x);
 
-    ll_menu_update_items_text(x);
     object_notify(x, gensym("attr_modified"),
                   object_attr_get((t_object*)x, gensym("items")));
     jbox_redraw((t_jbox*)x);
@@ -794,7 +915,6 @@ void ll_menu_delete(t_ll_menu *x, long index)
     ll_menu_resize_checked_flags(x, new_count);
     ll_menu_validate_selected_item(x);
 
-    ll_menu_update_items_text(x);
     object_notify(x, gensym("attr_modified"),
                   object_attr_get((t_object*)x, gensym("items")));
     jbox_redraw((t_jbox*)x);
@@ -857,120 +977,24 @@ void ll_menu_setsymbol(t_ll_menu *x, t_symbol *s)
     }
 }
 
-t_max_err ll_menu_getitems(t_ll_menu *x, void *attr, long *ac, t_atom **av)
+t_max_err ll_menu_getitems(t_ll_menu *x, void *attr, long *dest_ac, t_atom **dest_av)
 {
-    ll_menu_update_items_text(x);
+    long count = (x->items ? linklist_getsize(x->items) : 0);
 
-    if (ac && av) {
-        char alloc;
-        if (!atom_alloc_array(1, ac, av, &alloc))
-            atom_setsym(*av, gensym(x->items_text));
-    }
-
-    return MAX_ERR_NONE;
-}
-
-t_max_err ll_menu_setitems(t_ll_menu *x, void *attr, long ac, t_atom *av)
-{
-    // Empty case
-    if (ac == 0 ||
-       (ac == 1 && atom_gettype(av) == A_SYM &&
-        atom_getsym(av) == gensym(""))) {
-
-        ll_menu_clear(x);
+    // ==========================
+    // CASE: NO ITEMS → "<empty>"
+    // ==========================
+    if (count == 0) {
+        *dest_ac = 1;
+        *dest_av = (t_atom*)sysmem_newptr(sizeof(t_atom));
+        atom_setsym(*dest_av, gensym("<empty>"));
         return MAX_ERR_NONE;
     }
 
-    // Get full text
-    long txtsize = 0;
-    char *txt = NULL;
-
-    if (atom_gettext(ac, av, &txtsize, &txt, ITEMS_FLAGS) == MAX_ERR_NONE && txt) {
-
-        strncpy(x->items_text, txt, sizeof(x->items_text)-1);
-        x->items_text[sizeof(x->items_text)-1] = 0;
-        sysmem_freeptr(txt);
-
-        // ---- rebuild list from text ----
-        ll_menu_rebuild_items_from_text(x);
-
-        // ---- update flags + selection ----
-        long new_count = linklist_getsize(x->items);
-        ll_menu_resize_checked_flags(x, new_count);
-        ll_menu_validate_selected_item(x);
-
-        // notify
-        object_notify(x, gensym("attr_modified"), attr);
-        jbox_redraw((t_jbox*)x);
-    }
-
-    return MAX_ERR_NONE;
-}
-
-void ll_menu_rebuild_items_from_text(t_ll_menu *x)
-{
-    if (!strcmp(x->items_text, "<empty>")) {
-        if (x->items)
-            linklist_clear(x->items);
-        return;
-    }
-
-    if (!x->items) {
-        x->items = linklist_new();
-        linklist_flags(x->items, OBJ_FLAG_DATA);
-    } else {
-        linklist_clear(x->items);
-    }
-
-    char buffer[2048];
-    strncpy(buffer, x->items_text, sizeof(buffer)-1);
-    buffer[sizeof(buffer)-1] = 0;
-
-    char *start = buffer;
-    char *comma;
-
-    while ((comma = strstr(start, ", "))) {
-        *comma = 0;
-
-        long ac = 0;
-        t_atom *av = NULL;
-
-        if (atom_setparse(&ac, &av, start) == MAX_ERR_NONE) {
-            t_atomarray *item = atomarray_new(ac, av);
-            linklist_append(x->items, item);
-        }
-
-        if (av) sysmem_freeptr(av);
-
-        start = comma + 2;
-    }
-
-    if (*start) {
-        long ac = 0;
-        t_atom *av = NULL;
-
-        if (atom_setparse(&ac, &av, start) == MAX_ERR_NONE) {
-            t_atomarray *item = atomarray_new(ac, av);
-            linklist_append(x->items, item);
-        }
-
-        if (av) sysmem_freeptr(av);
-    }
-}
-
-void ll_menu_update_items_text(t_ll_menu *x)
-{
-    if (!x->items) {
-        x->items_text[0] = 0;
-        return;
-    }
-
-    char result[2048] = "";
-    long count = x->items ? linklist_getsize(x->items) : 0;
-    if (count == 0) {
-        strcpy(x->items_text, "<empty>");
-        return;
-    }
+    // --------------------------------------------------
+    // First pass: determine total atoms required
+    // --------------------------------------------------
+    long total = 0;
 
     for (long i = 0; i < count; i++) {
         t_atomarray *it = (t_atomarray*)linklist_getindex(x->items, i);
@@ -981,24 +1005,114 @@ void ll_menu_update_items_text(t_ll_menu *x)
         t_atom *av = NULL;
         atomarray_getatoms(it, &ac, &av);
 
-        long txtsize = 0;
-        char *txt = NULL;
+        total += ac;
 
-        if (atom_gettext(ac, av, &txtsize, &txt, ITEMS_FLAGS) == MAX_ERR_NONE && txt) {
-            size_t remain = sizeof(result) - strlen(result) - 1;
-            strncat(result, txt, remain);
+        if (i < count - 1)
+            total += 1; // comma
+    }
 
-            if (i < count - 1) {
-                // comma-space between entries
-                remain = sizeof(result) - strlen(result) - 1;
-                strncat(result, ", ", remain);
+    // --------------------------------------------------
+    // Allocate final storage
+    // --------------------------------------------------
+    *dest_ac = total;
+    *dest_av = (t_atom*)sysmem_newptr(total * sizeof(t_atom));
+
+    long out_i = 0;
+
+    // --------------------------------------------------
+    // Build final list
+    // --------------------------------------------------
+    for (long i = 0; i < count; i++) {
+
+        t_atomarray *it = (t_atomarray*)linklist_getindex(x->items, i);
+        if (!it)
+            continue;
+
+        long ac = 0;
+        t_atom *av = NULL;
+        atomarray_getatoms(it, &ac, &av);
+
+        // Copy atoms from item → dest_av
+        for (long j = 0; j < ac; j++) {
+
+            // ----------- true atom copy -----------
+            (*dest_av)[out_i].a_type = av[j].a_type;
+
+            switch (av[j].a_type) {
+                case A_SYM:
+                    (*dest_av)[out_i].a_w.w_sym = av[j].a_w.w_sym;
+                    break;
+                case A_LONG:
+                    (*dest_av)[out_i].a_w.w_long = av[j].a_w.w_long;
+                    break;
+                case A_FLOAT:
+                    (*dest_av)[out_i].a_w.w_float = av[j].a_w.w_float;
+                    break;
+                case A_OBJ:
+                    (*dest_av)[out_i].a_w.w_obj = av[j].a_w.w_obj;
+                    break;
+                default:
+                    (*dest_av)[out_i].a_w = av[j].a_w;
+                    break;
             }
-            sysmem_freeptr(txt);
+
+            out_i++;
+        }
+
+        // Add comma unless last
+        if (i < count - 1) {
+            A_SETCOMMA(&(*dest_av)[out_i]);
+            out_i++;
         }
     }
 
-    strncpy(x->items_text, result, sizeof(x->items_text)-1);
-    x->items_text[sizeof(x->items_text)-1] = 0;
+    return MAX_ERR_NONE;
+}
+
+t_max_err ll_menu_setitems(t_ll_menu *x, void *attr, long ac, t_atom *av)
+{
+    if (!x)
+        return MAX_ERR_GENERIC;
+
+    // <empty>
+    if (ac == 1 && atom_gettype(av) == A_SYM &&
+        atom_getsym(av) == gensym("<empty>"))
+    {
+        // clear everything
+        if (x->items) {
+            object_free(x->items);
+            x->items = NULL;
+        }
+
+        object_notify(x, gensym("attr_modified"), attr);
+        return MAX_ERR_NONE;
+    }
+    
+    if (x->items)
+        object_free(x->items);
+
+    x->items = linklist_new();
+    linklist_flags(x->items, OBJ_FLAG_REF); // strong refs
+
+    long start = 0;
+
+    while (start < ac) {
+        long end = start;
+        while (end < ac && atom_gettype(&av[end]) != A_COMMA)
+            end++;
+
+        long entry_count = end - start;
+
+        if (entry_count > 0) {
+            t_atomarray *entry = atomarray_new(entry_count, &av[start]);
+            linklist_append(x->items, entry);
+        }
+        start = end + 1;
+    }
+
+    object_notify(x, gensym("attr_modified"), attr);
+
+    return MAX_ERR_NONE;
 }
 
 void ll_menu_notify(t_ll_menu *x, t_symbol *s, t_symbol *msg, void *sender, void *data)
@@ -1129,29 +1243,14 @@ void ll_menu_dict(t_ll_menu *x, t_symbol *s)
 
     // build from each symbol in the array
     for (long i = 0; i < ac; i++) {
-
-        if (atom_gettype(av + i) != A_SYM)
-            continue;
-
-        t_symbol *sym = atom_getsym(av + i);
-
-        // Create a single-atom entry
-        t_atom item_atom;
-        atom_setsym(&item_atom, sym);
-
-        t_atomarray *it = atomarray_new(1, &item_atom);
+        t_atomarray *it = atomarray_new(1, av + i);
         linklist_append(x->items, it);
     }
-
-    // rebuild canonical items_text
-    ll_menu_update_items_text(x);
-
     // notify
     object_notify(x, gensym("attr_modified"),
                   object_attr_get((t_object *)x, gensym("items")));
 
     jbox_redraw((t_jbox *)x);
-
     dictobj_release(d);
 }
 
@@ -1256,30 +1355,30 @@ void ll_menu_validate_selected_item(t_ll_menu *x)
         x->selected_item = (first >= 0 ? first : 0);
     }
 }
-
 void ll_menu_set_selected_internal(t_ll_menu *x, long index)
 {
     long count = x->items ? linklist_getsize(x->items) : 0;
-    if (count == 0)
-        return;
 
-    if (index < 0 || index >= count)
-        return;
+    if (count <= 0) return;
+    if (index < 0 || index >= count) return;
+
+    // SAFETY: ensure flags array exists & sized
+    if (!x->checked_flags || x->items_count != count) {
+        ll_menu_ensure_checked_flags(x);
+    }
 
     t_atomarray *it = linklist_getindex(x->items, index);
     if (!ll_menu_item_is_selectable(it))
         return;
 
-    // -------- update selected_item --------
     x->selected_item = index;
 
-    // -------- apply checkmode --------
     switch (x->checkmode) {
         case MANUAL:
             break;
 
         case SELECTED:
-            memset(x->checked_flags, 0, x->items_count * sizeof(char));
+            memset(x->checked_flags, 0, count * sizeof(char));
             x->checked_flags[index] = 1;
             break;
 
@@ -1289,8 +1388,9 @@ void ll_menu_set_selected_internal(t_ll_menu *x, long index)
     }
 
     jbox_redraw((t_jbox *)x);
-    object_notify(x, gensym("modified"), NULL); // pattr notify
+    object_notify(x, gensym("modified"), NULL);
 }
+
 
 void ll_menu_set_selected_and_output(t_ll_menu *x, long index)
 {

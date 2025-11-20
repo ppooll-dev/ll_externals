@@ -9,9 +9,20 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 34.0, 100.0, 711.0, 788.0 ],
+        "rect": [ 34.0, 100.0, 899.0, 788.0 ],
         "subpatcher_template": "js_default",
         "boxes": [
+            {
+                "box": {
+                    "id": "obj-45",
+                    "maxclass": "button",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "bang" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 287.0, 51.0, 24.0, 24.0 ]
+                }
+            },
             {
                 "box": {
                     "id": "obj-38",
@@ -101,7 +112,7 @@
             },
             {
                 "box": {
-                    "code": "{\n    \"items\": [\r\n        \"six seven\", \r\n        \"eight\", \r\n        \"-\",  \r\n        \"ten\", \r\n        \"(eleven)\", \r\n        \"<separator>\",\r\n        \"twelve\" \r\n    ]\n}",
+                    "code": "{\n    \"items\": [\r\n        67,\r\n        \"6 7\",\r\n        \"six seven\", \r\n        \"eight\", \r\n        \"-\",  \r\n        \"nine\",\r\n        \"ten\", \r\n        \"(eleven)\", \r\n        \"<separator>\",\r\n        \"twelve\" \r\n    ]\n}",
                     "fontface": 0,
                     "fontname": "<Monospaced>",
                     "fontsize": 12.0,
@@ -110,7 +121,7 @@
                     "numinlets": 2,
                     "numoutlets": 5,
                     "outlettype": [ "dictionary", "", "", "", "" ],
-                    "patching_rect": [ 387.0, 382.0, 234.0, 207.0 ],
+                    "patching_rect": [ 387.0, 382.0, 230.0, 245.0 ],
                     "saved_object_attributes": {
                         "legacy": 1,
                         "parameter_enable": 0,
@@ -592,7 +603,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 6.0, 11.0, 35.0, 22.0 ],
+                    "patching_rect": [ 10.0, 11.0, 35.0, 22.0 ],
                     "text": "clear"
                 }
             },
@@ -603,7 +614,7 @@
                     "numinlets": 1,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 6.0, 66.0, 19.0, 22.0 ],
+                    "patching_rect": [ 9.75, 66.0, 19.0, 22.0 ],
                     "text": "t l"
                 }
             },
@@ -647,7 +658,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 45.0, 11.0, 29.5, 22.0 ],
+                    "patching_rect": [ 50.25, 11.0, 29.5, 22.0 ],
                     "text": "0"
                 }
             },
@@ -697,8 +708,8 @@
                     "outlettype": [ "", "", "", "" ],
                     "patching_rect": [ 88.0, 517.0, 56.0, 22.0 ],
                     "restore": {
-                        "ll_menu": [ "three halves" ],
-                        "umenu": [ "one" ]
+                        "ll_menu": [ "one" ],
+                        "umenu": [ "four" ]
                     },
                     "text": "autopattr",
                     "varname": "u358001695"
@@ -788,7 +799,7 @@
                     "fontface": 0,
                     "fontname": "Arial",
                     "id": "obj-2",
-                    "items": "one, (two), -, three halves, <separator>, four, five",
+                    "items": [ "one", ",", "(two)", ",", "-", ",", "three", "halves", ",", "<separator>", ",", "four", ",", "five" ],
                     "maxclass": "ll_menu",
                     "numinlets": 1,
                     "numoutlets": 3,
@@ -1066,6 +1077,20 @@
                     "destination": [ "obj-2", 0 ],
                     "hidden": 1,
                     "source": [ "obj-44", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-1", 0 ],
+                    "order": 1,
+                    "source": [ "obj-45", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-2", 0 ],
+                    "order": 0,
+                    "source": [ "obj-45", 0 ]
                 }
             },
             {
