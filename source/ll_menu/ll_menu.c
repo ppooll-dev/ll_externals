@@ -14,10 +14,6 @@ typedef enum {
     TOGGLES
 } CheckModes;
 
-typedef struct _ll_menu_item {
-    t_atomarray *atoms; // one menu entry = list of atoms
-} t_ll_menu_item;
-
 typedef struct _ll_menu {
     t_jbox  j_box;
     void    *outlet_index, *outlet_symbol, *outlet_status;
@@ -54,21 +50,14 @@ t_class *ll_menu_class;
 
 void *ll_menu_new(t_symbol *s, long argc, t_atom *argv);
 void ll_menu_free(t_ll_menu *x);
-void ll_menu_bang(t_ll_menu *x);
 void ll_menu_notify(t_ll_menu *x, t_symbol *s, t_symbol *msg, void *sender, void *data);
-
 void ll_menu_paint(t_ll_menu *x, t_object *view);
 void ll_menu_getdrawparams(t_ll_menu *x, t_object *patcherview, t_jboxdrawparams *params);
-
 void ll_menu_mousedown(t_ll_menu *x, t_object *patcherview, t_pt pt, long modifiers);
 
-t_max_err ll_menu_getvalue(t_ll_menu *x, long *ac, t_atom **av);
-t_max_err ll_menu_setvalue(t_ll_menu *x, long ac, t_atom *av);
-
-t_max_err ll_menu_getitems(t_ll_menu *x, void *attr, long *argc, t_atom **argv);
-t_max_err ll_menu_setitems(t_ll_menu *x, void *attr, long argc, t_atom *argv);
-
 // messages: generic
+void ll_menu_anything(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv);
+void ll_menu_bang(t_ll_menu *x);
 void ll_menu_int(t_ll_menu *x, long index);
 void ll_menu_setint(t_ll_menu *x, long index);
 void ll_menu_symbol(t_ll_menu *x, t_symbol *s);
@@ -76,36 +65,42 @@ void ll_menu_setsymbol(t_ll_menu *x, t_symbol *s);
 void ll_menu_dict(t_ll_menu *x, t_symbol *s);
 void ll_menu_dump(t_ll_menu *x);
 
-// modify "items" attr
-//  messages
+// messages: ll_menu
+void ll_menu_show(t_ll_menu *x); // show menu
+
+// messages: modify "items" attr
 void ll_menu_clear(t_ll_menu *x);
 void ll_menu_append(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv);
 void ll_menu_insert(t_ll_menu *x, long index, long argc, t_atom *argv);
 void ll_menu_delete(t_ll_menu *x, long index);
-//  helpers
+
+// messages: check items
+void ll_menu_checkitem(t_ll_menu *x, long index, long mode);
+void ll_menu_checksymbol(t_ll_menu *x, t_symbol *s, long mode);
+void ll_menu_clearchecks(t_ll_menu *x);
+
+// attr get/set
+t_max_err ll_menu_getvalue(t_ll_menu *x, long *ac, t_atom **av);
+t_max_err ll_menu_setvalue(t_ll_menu *x, long ac, t_atom *av);
+
+t_max_err ll_menu_getitems(t_ll_menu *x, void *attr, long *argc, t_atom **argv);
+t_max_err ll_menu_setitems(t_ll_menu *x, void *attr, long argc, t_atom *argv);
+
+// helpers - item_text
 void ll_menu_rebuild_items_from_text(t_ll_menu *x);
 void ll_menu_update_items_text(t_ll_menu *x);
 
-// check items
-void ll_menu_resize_checked_flags(t_ll_menu *x, long new_count);
-void ll_menu_checkitem(t_ll_menu *x, long index, long mode);
-void ll_menu_clearchecks(t_ll_menu *x);
-
+// helpers - items
 t_symbol *ll_menu_get_item_symbol(t_atomarray *it);
 void ll_menu_validate_selected_item(t_ll_menu *x);
 void ll_menu_set_selected_internal(t_ll_menu *x, long index);
 void ll_menu_set_selected_and_output(t_ll_menu *x, long index);
-
 char ll_menu_item_is_selectable(t_atomarray *it);
 t_symbol *ll_menu_first_selectable_symbol(t_ll_menu *x);
 long ll_menu_first_selectable_index(t_ll_menu *x);
 
-void ll_menu_anything(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv);
-
-// ll_menu only ?
-void ll_menu_items(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv);
-void ll_menu_show(t_ll_menu *x);
-void ll_menu_checksymbol(t_ll_menu *x, t_symbol *s, long mode);
+// helpers - checks
+void ll_menu_resize_checked_flags(t_ll_menu *x, long new_count);
 
 void ext_main(void *r)
 {
@@ -123,18 +118,18 @@ void ext_main(void *r)
 
     jbox_initclass(c, JBOX_DRAWFIRSTIN | JBOX_FIXWIDTH | JBOX_FONTATTR | JBOX_COLOR);
     
-    class_addmethod(c, (method)ll_menu_paint, "paint", A_CANT, 0);
-    class_addmethod(c, (method)ll_menu_notify, "notify", A_CANT, 0);
-    class_addmethod(c, (method)ll_menu_anything, "anything", A_GIMME, 0);
+    class_addmethod(c, (method)ll_menu_paint,       "paint", A_CANT, 0);
+    class_addmethod(c, (method)ll_menu_notify,      "notify", A_CANT, 0);
+    class_addmethod(c, (method)ll_menu_anything,    "anything", A_GIMME, 0);
+        
+    class_addmethod(c, (method)ll_menu_mousedown,       "mousedown", A_CANT, 0);
+    class_addmethod(c, (method)ll_menu_bang,            "bang", 0);
+    class_addmethod(c, (method)ll_menu_checksymbol,     "checksymbol", A_SYM, 0);
+    class_addmethod(c, (method)ll_menu_getdrawparams,   "getdrawparams", A_CANT, 0);
+    class_addmethod(c, (method)ll_menu_getvalue,        "getvalueof", A_CANT, 0);
+    class_addmethod(c, (method)ll_menu_setvalue,        "setvalueof", A_CANT, 0);
     
-    class_addmethod(c, (method)ll_menu_mousedown, "mousedown", A_CANT, 0);
-    class_addmethod(c, (method)ll_menu_bang, "bang", 0);
-    class_addmethod(c, (method)ll_menu_checksymbol, "checksymbol", A_SYM, 0);
-    class_addmethod(c, (method)ll_menu_getdrawparams, "getdrawparams", A_CANT, 0);
-    class_addmethod(c, (method)ll_menu_getvalue, "getvalueof", A_CANT, 0);
-    class_addmethod(c, (method)ll_menu_setvalue, "setvalueof", A_CANT, 0);
-    
-    class_addmethod(c, (method)ll_menu_clear, "clear", 0);
+    class_addmethod(c, (method)ll_menu_clear,  "clear", 0);
     class_addmethod(c, (method)ll_menu_append, "append", A_GIMME, 0);
     class_addmethod(c, (method)ll_menu_insert, "insert", A_LONG, A_GIMME, 0);
     class_addmethod(c, (method)ll_menu_delete, "delete", A_LONG, 0);
@@ -143,7 +138,7 @@ void ext_main(void *r)
     class_addmethod(c, (method)ll_menu_setint,     "set",        A_LONG, 0);
     class_addmethod(c, (method)ll_menu_symbol,     "symbol",     A_SYM,  0);
     class_addmethod(c, (method)ll_menu_setsymbol,  "setsymbol",  A_SYM,  0);
-    class_addmethod(c, (method)ll_menu_dict, "dictionary", A_SYM, 0);
+    class_addmethod(c, (method)ll_menu_dict,       "dictionary", A_SYM, 0);
     
     class_addmethod(c, (method)ll_menu_checkitem,   "checkitem",   A_LONG, A_LONG, 0);
     class_addmethod(c, (method)ll_menu_clearchecks, "clearchecks", 0);
@@ -236,32 +231,6 @@ void ext_main(void *r)
     ll_menu_class = c;
 }
 
-// Store incoming list of options
-void ll_menu_items(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv)
-{
-    // free previous list
-    if (x->items)
-        object_free(x->items);
-
-    x->items = atomarray_new(argc, argv);
-
-    // update count
-    long new_count = argc;
-    ll_menu_resize_checked_flags(x, new_count);
-
-    // validate selected_item
-    ll_menu_validate_selected_item(x);
-
-    // update text representation
-    ll_menu_update_items_text(x);
-
-    // attribute modified → redraw but DO NOT output or change pattr
-    object_notify(x, gensym("attr_modified"),
-                  object_attr_get((t_object*)x, gensym("items")));
-    jbox_redraw((t_jbox*)x);
-}
-
-
 void ll_menu_getdrawparams(t_ll_menu *x, t_object *patcherview, t_jboxdrawparams *params)
 {
     params->d_borderthickness = 0;
@@ -273,7 +242,6 @@ void ll_menu_getdrawparams(t_ll_menu *x, t_object *patcherview, t_jboxdrawparams
 void ll_menu_bang(t_ll_menu *x)
 {
     // TODO: output value
-    ll_menu_show(x);
 }
 
 // Dump menu items
@@ -1032,7 +1000,6 @@ void ll_menu_update_items_text(t_ll_menu *x)
     strncpy(x->items_text, result, sizeof(x->items_text)-1);
     x->items_text[sizeof(x->items_text)-1] = 0;
 }
-
 
 void ll_menu_notify(t_ll_menu *x, t_symbol *s, t_symbol *msg, void *sender, void *data)
 {
