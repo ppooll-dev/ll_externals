@@ -4,14 +4,133 @@
         "appversion": {
             "major": 9,
             "minor": 1,
-            "revision": 0,
+            "revision": 1,
             "architecture": "x64",
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 34.0, 100.0, 899.0, 788.0 ],
+        "rect": [ 34.0, 100.0, 906.0, 788.0 ],
         "subpatcher_template": "js_default",
         "boxes": [
+            {
+                "box": {
+                    "code": "function menu(item){\r\n    post(\"js\", item, \"\\n\")\r\n}",
+                    "filename": "none",
+                    "fontface": 0,
+                    "fontname": "<Monospaced>",
+                    "fontsize": 12.0,
+                    "id": "obj-57",
+                    "maxclass": "v8.codebox",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 658.21, 317.14, 340.0, 200.0 ],
+                    "saved_object_attributes": {
+                        "parameter_enable": 0
+                    }
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-55",
+                    "maxclass": "message",
+                    "numinlets": 2,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 653.5, 221.0, 161.0, 22.0 ],
+                    "text": "checksymbol three halves -1"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-56",
+                    "linecount": 2,
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 691.0, 77.0, 182.0, 33.0 ],
+                    "text": "set to first <separator>\npattrstorage stores blank symbol"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-53",
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 691.0, 48.0, 94.0, 22.0 ],
+                    "text": "prepend symbol"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-48",
+                    "maxclass": "message",
+                    "numinlets": 2,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 774.0, 17.5, 82.0, 22.0 ],
+                    "text": "\"three halves\""
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-42",
+                    "maxclass": "message",
+                    "numinlets": 2,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 691.0, 17.5, 74.0, 22.0 ],
+                    "text": "three halves"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-52",
+                    "maxclass": "button",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "bang" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 783.0, 109.0, 24.0, 24.0 ]
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-51",
+                    "linecount": 2,
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 783.0, 142.0, 64.0, 35.0 ],
+                    "text": "sprintf symbol -"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-49",
+                    "maxclass": "button",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "bang" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 691.0, 112.0, 24.0, 24.0 ]
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-47",
+                    "linecount": 2,
+                    "maxclass": "newobj",
+                    "numinlets": 1,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 691.0, 142.0, 74.0, 35.0 ],
+                    "text": "sprintf symbol \\\"\\\""
+                }
+            },
             {
                 "box": {
                     "id": "obj-45",
@@ -192,7 +311,7 @@
                         "appversion": {
                             "major": 9,
                             "minor": 1,
-                            "revision": 0,
+                            "revision": 1,
                             "architecture": "x64",
                             "modernui": 1
                         },
@@ -334,7 +453,7 @@
                         "appversion": {
                             "major": 9,
                             "minor": 1,
-                            "revision": 0,
+                            "revision": 1,
                             "architecture": "x64",
                             "modernui": 1
                         },
@@ -468,12 +587,12 @@
             {
                 "box": {
                     "id": "obj-46",
-                    "linecount": 6,
+                    "linecount": 5,
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 9.0, 403.0, 333.0, 100.0 ],
-                    "text": "TODO:\n\n- dict items -- always sets as single symbol (even with space)\n- prefix_mode\n- blanksym\n- dump\n"
+                    "patching_rect": [ 9.0, 403.0, 333.0, 87.0 ],
+                    "text": "TODO:\n\n- dict items -- does not work on first try?\n- prefix_mode\n- blanksym\n"
                 }
             },
             {
@@ -708,8 +827,8 @@
                     "outlettype": [ "", "", "", "" ],
                     "patching_rect": [ 88.0, 517.0, 56.0, 22.0 ],
                     "restore": {
-                        "ll_menu": [ "one" ],
-                        "umenu": [ "four" ]
+                        "ll_menu": [ 5 ],
+                        "umenu": [ 5 ]
                     },
                     "text": "autopattr",
                     "varname": "u358001695"
@@ -726,7 +845,8 @@
                     "saved_object_attributes": {
                         "client_rect": [ 1029, 101, 1429, 601 ],
                         "parameter_enable": 0,
-                        "parameter_mappable": 0
+                        "parameter_mappable": 0,
+                        "storage_rect": [ 430, 270, 1276, 999 ]
                     },
                     "text": "pattrstorage",
                     "varname": "u803001596"
@@ -807,9 +927,8 @@
                     "outputcancel": 1,
                     "parameter_enable": 0,
                     "patching_rect": [ 312.0, 165.0, 100.0, 24.0 ],
-                    "pattrmode": 1,
                     "positionmode": 1,
-                    "prefix": "",
+                    "prefix": "menu",
                     "varname": "ll_menu"
                 }
             },
@@ -836,7 +955,8 @@
                     "outlettype": [ "int", "", "" ],
                     "parameter_enable": 0,
                     "patching_rect": [ 9.75, 164.0, 100.0, 22.0 ],
-                    "pattrmode": 1,
+                    "prefix": "menu",
+                    "prefix_mode": 1,
                     "varname": "umenu"
                 }
             }
@@ -851,6 +971,7 @@
             {
                 "patchline": {
                     "destination": [ "obj-50", 1 ],
+                    "order": 1,
                     "source": [ "obj-1", 1 ]
                 }
             },
@@ -858,6 +979,13 @@
                 "patchline": {
                     "destination": [ "obj-50", 0 ],
                     "source": [ "obj-1", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-57", 0 ],
+                    "order": 0,
+                    "source": [ "obj-1", 1 ]
                 }
             },
             {
@@ -931,6 +1059,7 @@
             {
                 "patchline": {
                     "destination": [ "obj-54", 1 ],
+                    "order": 1,
                     "source": [ "obj-2", 1 ]
                 }
             },
@@ -938,6 +1067,13 @@
                 "patchline": {
                     "destination": [ "obj-54", 0 ],
                     "source": [ "obj-2", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-57", 0 ],
+                    "order": 0,
+                    "source": [ "obj-2", 1 ]
                 }
             },
             {
@@ -1074,6 +1210,12 @@
             },
             {
                 "patchline": {
+                    "destination": [ "obj-53", 0 ],
+                    "source": [ "obj-42", 0 ]
+                }
+            },
+            {
+                "patchline": {
                     "destination": [ "obj-2", 0 ],
                     "hidden": 1,
                     "source": [ "obj-44", 0 ]
@@ -1096,7 +1238,51 @@
             {
                 "patchline": {
                     "destination": [ "obj-30", 0 ],
+                    "hidden": 1,
+                    "source": [ "obj-47", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-53", 0 ],
+                    "source": [ "obj-48", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-47", 0 ],
+                    "source": [ "obj-49", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-30", 0 ],
                     "source": [ "obj-5", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-30", 0 ],
+                    "hidden": 1,
+                    "source": [ "obj-51", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-51", 0 ],
+                    "source": [ "obj-52", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-30", 0 ],
+                    "source": [ "obj-53", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-2", 0 ],
+                    "source": [ "obj-55", 0 ]
                 }
             },
             {
