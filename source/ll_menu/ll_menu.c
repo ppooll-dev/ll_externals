@@ -762,18 +762,17 @@ void ll_menu_show(t_ll_menu *x)
         ll_menu_set_selected_and_output(x, choice - 1);
     }
     else if (x->show_cancel) {
-        t_atom outv[2];
-        long ac = 0;
+        t_atom a;
+        atom_setsym(&a, gensym("<cancel>"));
 
         if (x->prepend && x->prepend != gensym("")) {
-            atom_setsym(outv + ac, x->prepend);
-            ac++;
+            // prepend <prepend> <cancel>
+            outlet_anything(x->outlet_symbol, x->prepend, 1, &a);
+        } else {
+            // output: list <cancel>
+            outlet_anything(x->outlet_symbol, _sym_list, 1, &a);
         }
 
-        atom_setsym(outv + ac, gensym("<cancel>"));
-        ac++;
-
-        outlet_list(x->outlet_symbol, gensym("list"), ac, outv);
         outlet_int(x->outlet_index, -1);
     }
 
