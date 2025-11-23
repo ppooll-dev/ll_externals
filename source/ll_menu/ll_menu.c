@@ -173,7 +173,7 @@ static void ll_menu_output(t_ll_menu *x, long index, t_ll_menu_item *item)
     long ac = item->ac;
     t_atom *av = item->av;
 
-    if (x->prepend && x->prepend != _sym_nothing && x->prepend != _sym_emptytext) {
+    if (x->prepend && x->prepend != gensym("")) {
         outlet_anything(x->outlet_symbol, x->prepend, ac, av);
     } else {
         outlet_anything(x->outlet_symbol, _sym_list, ac, av);
@@ -219,7 +219,7 @@ static void ll_menu_post_items_changed(t_ll_menu *x, void *attr)
     ll_menu_realloc_flags(x);
     ll_menu_validate_selected_item(x);
     jbox_redraw((t_jbox *)x);
-    object_notify(x, _sym_attr_modified, attr);
+    object_notify(x, gensym("attr_modified"), attr);
 }
 
 void ll_menu_select(t_ll_menu *x, long index, char do_output, char do_notify)
@@ -258,7 +258,7 @@ void ll_menu_select(t_ll_menu *x, long index, char do_output, char do_notify)
 
     // pattr notify
     if (do_notify)
-        object_notify(x, gensym("modified"), NULL);
+        object_notify(x, _sym_modified, NULL);
 }
 
 void ext_main(void *r)
@@ -421,7 +421,7 @@ void *ll_menu_new(t_symbol *s, long argc, t_atom *argv)
     x->items        = NULL;     // linklist of t_ll_menu_item*, created lazily
     x->items_count  = 0;
 
-    x->prepend      = _sym_emptytext;
+    x->prepend      = gensym("");
     x->objectclick  = 0;
     x->position_mode = 0;
     x->draw_arrow   = 1;        // will be overridden by "arrow" attr if set
@@ -469,7 +469,7 @@ void ll_menu_free(t_ll_menu *x)
 
 void ll_menu_notify(t_ll_menu *x, t_symbol *s, t_symbol *msg, void *sender, void *data)
 {
-    if (msg == _sym_attr_modified && sender == (void *)x)
+    if (msg == gensym("attr_modified") && sender == (void *)x)
         jbox_redraw((t_jbox *)x);
 }
 
@@ -499,7 +499,7 @@ void ll_menu_paint(t_ll_menu *x, t_object *view)
         fsize = 12.0;
 
     x->font = jfont_create(
-        (fname && fname != _sym_emptytext) ? fname->s_name : "Arial",
+        (fname && fname != gensym("")) ? fname->s_name : "Arial",
         (t_jgraphics_font_slant) jbox_get_font_slant((t_object *)x),
         (t_jgraphics_font_weight) jbox_get_font_weight((t_object *)x),
         fsize
@@ -731,7 +731,7 @@ void ll_menu_show(t_ll_menu *x)
 
     t_symbol *fname = jbox_get_fontname((t_object *)x);
     t_jfont *menufont = jfont_create(
-        (fname && fname != _sym_emptytext ? fname->s_name : "Arial"),
+        (fname && fname != gensym("") ? fname->s_name : "Arial"),
         (t_jgraphics_font_slant) jbox_get_font_slant((t_object *)x),
         (t_jgraphics_font_weight) jbox_get_font_weight((t_object *)x),
         msize
@@ -829,7 +829,7 @@ void ll_menu_show(t_ll_menu *x)
         t_atom a;
         atom_setsym(&a, gensym("<cancel>"));
 
-        if (x->prepend && x->prepend != _sym_emptytext) {
+        if (x->prepend && x->prepend != gensym("")) {
             // prepend <prepend> <cancel>
             outlet_anything(x->outlet_symbol, x->prepend, 1, &a);
         } else {
@@ -1001,17 +1001,17 @@ t_max_err ll_menu_getvalue(t_ll_menu *x, long *ac, t_atom **av)
             (t_ll_menu_item *)linklist_getindex(x->items, x->selected_item);
 
         if (!item) {
-            atom_setsym(*av, _sym_emptytext);
+            atom_setsym(*av, gensym(""));
             return MAX_ERR_NONE;
         }
 
         if (item->is_separator)
-            atom_setsym(*av, _sym_emptytext);
+            atom_setsym(*av, gensym(""));
         else
             atom_setsym(*av, gensym(item->label));
     }
     else {
-        atom_setsym(*av, _sym_emptytext);
+        atom_setsym(*av, gensym(""));
     }
     return MAX_ERR_NONE;
 }
@@ -1122,7 +1122,7 @@ t_max_err ll_menu_setitems(t_ll_menu *x, void *attr, long ac, t_atom *av)
         ll_menu_validate_selected_item(x);
         jbox_redraw((t_jbox *)x);
 
-        object_notify(x, _sym_attr_modified, attr);
+        object_notify(x, gensym("attr_modified"), attr);
         return MAX_ERR_NONE;
     }
 
@@ -1277,7 +1277,7 @@ t_ll_menu_item *ll_menu_item_new(long ac, t_atom *av)
                                      OBEX_UTIL_ATOM_GETTEXT_SYM_NO_QUOTE) == MAX_ERR_NONE) {
                         atom_setsym(dst, gensym(text));
                     } else {
-                        atom_setsym(dst, _sym_emptytext);
+                        atom_setsym(dst, gensym(""));
                     }
 
                     if (text)
