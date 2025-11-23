@@ -2,7 +2,7 @@
  ll_mcwaveform
  by klaus filip 2020
  read, file, drag&drop
- by joe stecatto 2024
+ by joe steccato 2024
  */
 
 #ifdef WIN_VERSION

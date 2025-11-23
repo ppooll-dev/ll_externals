@@ -1,3 +1,10 @@
+/*
+ ll_menu
+ by joe steccato 2025
+
+ umenu with extras ("show" message, checksymbol
+ */
+
 #include "ext.h"
 #include "ext_obex.h"
 #include "ext_obex_util.h"
@@ -7,6 +14,8 @@
 #include "jpatcher_api.h"
 
 #define ITEMS_FLAGS (OBEX_UTIL_ATOM_GETTEXT_SYM_NO_QUOTE)
+
+static t_symbol *sym_items = NULL;
 
 typedef enum {
     MANUAL,
@@ -30,7 +39,7 @@ typedef struct _ll_menu {
 
     t_linklist *items;      // store the menu items dynamically
     
-    char items_dummy;
+    void *items_storage;
     
     t_symbol *prepend;      // optional symbol to prepend on output
 
@@ -65,7 +74,7 @@ void ll_menu_paint(t_ll_menu *x, t_object *view);
 void ll_menu_getdrawparams(t_ll_menu *x, t_object *patcherview, t_jboxdrawparams *params);
 void ll_menu_mousedown(t_ll_menu *x, t_object *patcherview, t_pt pt, long modifiers);
 
-// messages: generic
+// messages: common
 void ll_menu_anything(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv);
 void ll_menu_bang(t_ll_menu *x);
 void ll_menu_int(t_ll_menu *x, long index);
@@ -97,13 +106,8 @@ t_max_err ll_menu_setitems(t_ll_menu *x, void *attr, long argc, t_atom *argv);
 t_max_err ll_menu_get_pattrmode(t_ll_menu *x, void *attr, long *ac, t_atom **av);
 t_max_err ll_menu_set_pattrmode(t_ll_menu *x, void *attr, long ac, t_atom *av);
 
-// helpers - checks
-void ll_menu_resize_checked_flags(t_ll_menu *x, long new_count);
-
 // helpers - items
 void ll_menu_validate_selected_item(t_ll_menu *x);
-void ll_menu_set_selected_internal(t_ll_menu *x, long index);
-void ll_menu_set_selected_and_output(t_ll_menu *x, long index);
 long ll_menu_first_selectable_index(t_ll_menu *x);
 
 static t_ll_menu_item *ll_menu_item_new(long ac, t_atom *av);
@@ -134,7 +138,7 @@ long ll_menu_find_atoms_index(t_ll_menu *x, long ac, t_atom *av)
 
     p[len] = 0;  // null-terminate trimmed
 
-    long count = linklist_getsize(x->items);
+    long count = ll_menu_count(x);
 
     // 1) umenu rule: empty string → first separator
     if (len == 0) {
@@ -169,7 +173,7 @@ static void ll_menu_output(t_ll_menu *x, long index, t_ll_menu_item *item)
     long ac = item->ac;
     t_atom *av = item->av;
 
-    if (x->prepend && x->prepend != gensym("")) {
+    if (x->prepend && x->prepend != _sym_nothing && x->prepend != _sym_emptytext) {
         outlet_anything(x->outlet_symbol, x->prepend, ac, av);
     } else {
         outlet_anything(x->outlet_symbol, _sym_list, ac, av);
@@ -191,19 +195,79 @@ static t_ll_menu_item *ll_menu_get_valid_item(t_ll_menu *x, long index)
     return (item && item->is_selectable) ? item : NULL;
 }
 
+void ll_menu_realloc_flags(t_ll_menu *x)
+{
+    long new_count = ll_menu_count(x);
+
+    char *new_flags = NULL;
+    if (new_count > 0)
+        new_flags = (char*)sysmem_newptrclear(new_count);
+
+    // copy old bits if useful
+    if (x->checked_flags && new_flags) {
+        long min = MIN(x->items_count, new_count);
+        memcpy(new_flags, x->checked_flags, min);
+    }
+
+    sysmem_freeptr(x->checked_flags);
+    x->checked_flags = new_flags;
+    x->items_count = new_count;
+}
+
 static void ll_menu_post_items_changed(t_ll_menu *x, void *attr)
 {
-    long count = ll_menu_count(x);
-    ll_menu_resize_checked_flags(x, count);
+    ll_menu_realloc_flags(x);
     ll_menu_validate_selected_item(x);
     jbox_redraw((t_jbox *)x);
-    object_notify(x, gensym("attr_modified"), attr);
+    object_notify(x, _sym_attr_modified, attr);
+}
+
+void ll_menu_select(t_ll_menu *x, long index, char do_output, char do_notify)
+{
+    t_ll_menu_item *item = ll_menu_get_valid_item(x, index);
+    if (!item)
+        return;
+
+    // --- internal selection logic ---
+    long count = ll_menu_count(x);
+    if (!x->checked_flags || x->items_count != count)
+        ll_menu_realloc_flags(x);
+
+    x->selected_item = index;
+
+    switch (x->checkmode) {
+        case MANUAL:
+            break;
+
+        case SELECTED:
+            memset(x->checked_flags, 0, count);
+            x->checked_flags[index] = 1;
+            break;
+
+        case TOGGLES:
+            x->checked_flags[index] ^= 1;
+            break;
+    }
+
+    // redraw UI
+    jbox_redraw((t_jbox *)x);
+
+    // output
+    if (do_output)
+        ll_menu_output(x, index, item);
+
+    // pattr notify
+    if (do_notify)
+        object_notify(x, gensym("modified"), NULL);
 }
 
 void ext_main(void *r)
 {
     t_class *c;
     common_symbols_init();
+    
+    sym_items = gensym("items");
+    
     c = class_new("ll_menu",
                   (method)ll_menu_new,
                   (method)ll_menu_free,
@@ -292,7 +356,7 @@ void ext_main(void *r)
     // behavior attributes
     CLASS_STICKY_ATTR(c, "category", 0, "Behavior");
 
-    CLASS_ATTR_ATOM(c, "items", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE, t_ll_menu, items_dummy);
+    CLASS_ATTR_ATOM(c, "items", ATTR_GET_OPAQUE | ATTR_SET_OPAQUE, t_ll_menu, items_storage);
     CLASS_ATTR_STYLE(c, "items", 0, "text_large");
     CLASS_ATTR_ACCESSORS(c, "items", ll_menu_getitems, ll_menu_setitems);
     CLASS_ATTR_LABEL(c, "items", 0, "Menu Items");
@@ -357,7 +421,7 @@ void *ll_menu_new(t_symbol *s, long argc, t_atom *argv)
     x->items        = NULL;     // linklist of t_ll_menu_item*, created lazily
     x->items_count  = 0;
 
-    x->prepend      = gensym("");
+    x->prepend      = _sym_emptytext;
     x->objectclick  = 0;
     x->position_mode = 0;
     x->draw_arrow   = 1;        // will be overridden by "arrow" attr if set
@@ -405,7 +469,7 @@ void ll_menu_free(t_ll_menu *x)
 
 void ll_menu_notify(t_ll_menu *x, t_symbol *s, t_symbol *msg, void *sender, void *data)
 {
-    if (msg == gensym("attr_modified") && sender == (void *)x)
+    if (msg == _sym_attr_modified && sender == (void *)x)
         jbox_redraw((t_jbox *)x);
 }
 
@@ -435,7 +499,7 @@ void ll_menu_paint(t_ll_menu *x, t_object *view)
         fsize = 12.0;
 
     x->font = jfont_create(
-        (fname && fname != gensym("")) ? fname->s_name : "Arial",
+        (fname && fname != _sym_emptytext) ? fname->s_name : "Arial",
         (t_jgraphics_font_slant) jbox_get_font_slant((t_object *)x),
         (t_jgraphics_font_weight) jbox_get_font_weight((t_object *)x),
         fsize
@@ -449,9 +513,11 @@ void ll_menu_paint(t_ll_menu *x, t_object *view)
     // 1. Try selected item
     if (x->selected_item >= 0 && x->selected_item < count) {
         t_ll_menu_item *sel = (t_ll_menu_item *)linklist_getindex(x->items, x->selected_item);
-        isSeparator = sel->is_separator;
-        if (sel && sel->label && !isSeparator)
-            label = sel->label;
+        if (sel) {
+            isSeparator = sel->is_separator;
+            if (sel->label && !isSeparator)
+                label = sel->label;
+        }
     }
 
     // 2. Fallback: first selectable item
@@ -534,10 +600,7 @@ void ll_menu_bang(t_ll_menu *x)
     if (!item)
         return;
 
-    ll_menu_set_selected_internal(x, x->selected_item);
-    ll_menu_output(x, x->selected_item, item);
-
-    // bang does NOT send pattr modified → no call here
+    ll_menu_select(x, x->selected_item, 1, 0);
 }
 
 //
@@ -545,26 +608,26 @@ void ll_menu_bang(t_ll_menu *x)
 //
 void ll_menu_int(t_ll_menu *x, long index)
 {
-    ll_menu_set_selected_and_output(x, index);
+    ll_menu_select(x, index, 1, 1);
 }
 
 void ll_menu_setint(t_ll_menu *x, long index)
 {
-    ll_menu_set_selected_internal(x, index);
+    ll_menu_select(x, index, 0, 1);
 }
 
 void ll_menu_symbol(t_ll_menu *x, t_symbol *msg, long ac, t_atom *av)
 {
     long index = ll_menu_find_atoms_index(x, ac, av);
     if (index >= 0)
-        ll_menu_set_selected_and_output(x, index);
+        ll_menu_select(x, index, 1, 1);
 }
 
 void ll_menu_setsymbol(t_ll_menu *x, t_symbol *msg, long ac, t_atom *av)
 {
     long index = ll_menu_find_atoms_index(x, ac, av);
     if (index >= 0)
-        ll_menu_set_selected_internal(x, index);
+        ll_menu_select(x, index, 0, 1);
 }
 
 void ll_menu_dict(t_ll_menu *x, t_symbol *s)
@@ -574,7 +637,7 @@ void ll_menu_dict(t_ll_menu *x, t_symbol *s)
         return;
 
     t_object *obj = NULL;
-    if (dictionary_getatomarray(d, gensym("items"), &obj)) {
+    if (dictionary_getatomarray(d, sym_items, &obj)) {
         dictobj_release(d);
         return;
     }
@@ -597,7 +660,7 @@ void ll_menu_dict(t_ll_menu *x, t_symbol *s)
         linklist_append(x->items, item);
     }
 
-    ll_menu_post_items_changed(x, object_attr_get((t_object*)x, gensym("items")));
+    ll_menu_post_items_changed(x, object_attr_get((t_object *)x, sym_items));
     dictobj_release(d);
 }
 
@@ -607,7 +670,7 @@ void ll_menu_dump(t_ll_menu *x)
     if (!x->items)
         return;
 
-    long count = linklist_getsize(x->items);
+    long count = ll_menu_count(x);
 
     for (long i = 0; i < count; i++) {
 
@@ -642,7 +705,8 @@ void ll_menu_dump(t_ll_menu *x)
 // Show popup menu on bang
 void ll_menu_show(t_ll_menu *x)
 {
-    long count = (x->items ? linklist_getsize(x->items) : 0);
+    long count = ll_menu_count(x);
+
     if (count <= 0)
         return;
 
@@ -667,7 +731,7 @@ void ll_menu_show(t_ll_menu *x)
 
     t_symbol *fname = jbox_get_fontname((t_object *)x);
     t_jfont *menufont = jfont_create(
-        (fname && fname != gensym("") ? fname->s_name : "Arial"),
+        (fname && fname != _sym_emptytext ? fname->s_name : "Arial"),
         (t_jgraphics_font_slant) jbox_get_font_slant((t_object *)x),
         (t_jgraphics_font_weight) jbox_get_font_weight((t_object *)x),
         msize
@@ -759,13 +823,13 @@ void ll_menu_show(t_ll_menu *x)
     int choice = jpopupmenu_popup(menu, pt, 0);
 
     if (choice > 0 && choice <= count) {
-        ll_menu_set_selected_and_output(x, choice - 1);
+        ll_menu_select(x, choice - 1, 1, 1);
     }
     else if (x->show_cancel) {
         t_atom a;
         atom_setsym(&a, gensym("<cancel>"));
 
-        if (x->prepend && x->prepend != gensym("")) {
+        if (x->prepend && x->prepend != _sym_emptytext) {
             // prepend <prepend> <cancel>
             outlet_anything(x->outlet_symbol, x->prepend, 1, &a);
         } else {
@@ -788,7 +852,7 @@ void ll_menu_clear(t_ll_menu *x)
     if (x->items)
         linklist_clear(x->items);
 
-    ll_menu_post_items_changed(x, object_attr_get((t_object*)x, gensym("items")));
+    ll_menu_post_items_changed(x, object_attr_get((t_object *)x, sym_items));
 }
 
 void ll_menu_append(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv)
@@ -805,7 +869,7 @@ void ll_menu_append(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv)
 
     linklist_append(x->items, item);
 
-    ll_menu_post_items_changed(x, object_attr_get((t_object*)x, gensym("items")));
+    ll_menu_post_items_changed(x, object_attr_get((t_object *)x, sym_items));
 }
 
 void ll_menu_insert(t_ll_menu *x, long index, long argc, t_atom *argv)
@@ -823,7 +887,7 @@ void ll_menu_insert(t_ll_menu *x, long index, long argc, t_atom *argv)
 
     linklist_insertindex(x->items, item, index);
 
-    ll_menu_post_items_changed(x, object_attr_get((t_object*)x, gensym("items")));
+    ll_menu_post_items_changed(x, object_attr_get((t_object *)x, sym_items));
 }
 
 void ll_menu_delete(t_ll_menu *x, long index)
@@ -838,7 +902,7 @@ void ll_menu_delete(t_ll_menu *x, long index)
 
     linklist_deleteindex(x->items, index);
 
-    ll_menu_post_items_changed(x, object_attr_get((t_object*)x, gensym("items")));
+    ll_menu_post_items_changed(x, object_attr_get((t_object *)x, sym_items));
 }
 
 //
@@ -923,7 +987,7 @@ t_max_err ll_menu_getvalue(t_ll_menu *x, long *ac, t_atom **av)
     if (atom_alloc_array(1, ac, av, &alloc))
         return MAX_ERR_OUT_OF_MEM;
 
-    long count = (x->items ? linklist_getsize(x->items) : 0);
+    long count = ll_menu_count(x);
 
     if (x->pattr_stores_sym == 0) {
         long idx = (count == 0 ? 0 : x->selected_item);
@@ -937,68 +1001,52 @@ t_max_err ll_menu_getvalue(t_ll_menu *x, long *ac, t_atom **av)
             (t_ll_menu_item *)linklist_getindex(x->items, x->selected_item);
 
         if (!item) {
-            atom_setsym(*av, gensym(""));
+            atom_setsym(*av, _sym_emptytext);
             return MAX_ERR_NONE;
         }
 
         if (item->is_separator)
-            atom_setsym(*av, gensym(""));
+            atom_setsym(*av, _sym_emptytext);
         else
             atom_setsym(*av, gensym(item->label));
     }
     else {
-        atom_setsym(*av, gensym(""));
+        atom_setsym(*av, _sym_emptytext);
     }
     return MAX_ERR_NONE;
 }
 
 t_max_err ll_menu_setvalue(t_ll_menu *x, long ac, t_atom *av)
 {
-    long count = linklist_getsize(x->items);
+    long count = ll_menu_count(x);
     if (count == 0)
         return MAX_ERR_NONE;
 
     // (1) restore by index
     if (!x->pattr_stores_sym && ac == 1 && atom_gettype(av) == A_LONG) {
-        ll_menu_set_selected_internal(x, atom_getlong(av));
+        ll_menu_select(x, atom_getlong(av), 1, 0);
         return MAX_ERR_NONE;
     }
 
     // (2) canonical string match
     long idx = ll_menu_find_atoms_index(x, ac, av);
     if (idx >= 0) {
-        ll_menu_set_selected_internal(x, idx);
+        ll_menu_select(x, idx, 1, 0);
         return MAX_ERR_NONE;
     }
 
     // (3) fallback
     long first = ll_menu_first_selectable_index(x);
-    if (first >= 0)
-        ll_menu_set_selected_internal(x, first);
+    if (first >= 0){
+        ll_menu_select(x, first, 1, 0);
+    }
 
     return MAX_ERR_NONE;
 }
 
-void ll_menu_ensure_checked_flags(t_ll_menu *x)
-{
-    long count = ll_menu_count(x);
-
-    // free old array
-    if (x->checked_flags) {
-        sysmem_freeptr(x->checked_flags);
-        x->checked_flags = NULL;
-    }
-
-    if (count > 0) {
-        x->checked_flags = (char*)sysmem_newptrclear(count * sizeof(char));
-    }
-
-    x->items_count = count;
-}
-
 t_max_err ll_menu_getitems(t_ll_menu *x, void *attr, long *dest_ac, t_atom **dest_av)
 {
-    long count = (x->items ? linklist_getsize(x->items) : 0);
+    long count = ll_menu_count(x);
 
     // NO ITEMS → "<empty>"
     if (count == 0) {
@@ -1070,11 +1118,11 @@ t_max_err ll_menu_setitems(t_ll_menu *x, void *attr, long ac, t_atom *av)
             x->items = NULL;
         }
 
-        ll_menu_ensure_checked_flags(x);
+        ll_menu_realloc_flags(x);
         ll_menu_validate_selected_item(x);
         jbox_redraw((t_jbox *)x);
 
-        object_notify(x, gensym("attr_modified"), attr);
+        object_notify(x, _sym_attr_modified, attr);
         return MAX_ERR_NONE;
     }
 
@@ -1110,7 +1158,7 @@ t_max_err ll_menu_setitems(t_ll_menu *x, void *attr, long ac, t_atom *av)
     }
 
     // 4) Rebuild flags + selection, redraw, notify
-    ll_menu_post_items_changed(x, object_attr_get((t_object*)x, gensym("items")));
+    ll_menu_post_items_changed(x, object_attr_get((t_object *)x, sym_items));
     return MAX_ERR_NONE;
 }
 
@@ -1142,7 +1190,7 @@ long ll_menu_first_selectable_index(t_ll_menu *x)
     if (!x->items)
         return -1;
 
-    long count = linklist_getsize(x->items);
+    long count = ll_menu_count(x);
 
     for (long i = 0; i < count; i++) {
         t_ll_menu_item *item = (t_ll_menu_item *)linklist_getindex(x->items, i);
@@ -1152,40 +1200,6 @@ long ll_menu_first_selectable_index(t_ll_menu *x)
 
     return -1;
 }
-
-void ll_menu_resize_checked_flags(t_ll_menu *x, long new_count)
-{
-    long old_count = x->items_count;
-    char *old_flags = x->checked_flags;
-
-    // allocate new array
-    if (new_count > 0) {
-        x->checked_flags = (char *)sysmem_newptrclear(new_count * sizeof(char));
-
-        // copy previous states (manual/toggles preserve)
-        if (old_flags) {
-            long copy_count = (old_count < new_count ? old_count : new_count);
-            for (long i = 0; i < copy_count; i++)
-                x->checked_flags[i] = old_flags[i];
-        }
-    }
-    else {
-        // no items → no flags
-        x->checked_flags = NULL;
-    }
-
-    // free old
-    if (old_flags)
-        sysmem_freeptr(old_flags);
-
-    // update x->items_count AFTER resizing
-    x->items_count = new_count;
-
-    // fix selected_item if out of range
-    if (x->selected_item >= new_count)
-        x->selected_item = 0;
-}
-
 
 void ll_menu_validate_selected_item(t_ll_menu *x)
 {
@@ -1217,50 +1231,6 @@ void ll_menu_validate_selected_item(t_ll_menu *x)
     }
 }
 
-void ll_menu_set_selected_internal(t_ll_menu *x, long index)
-{
-    t_ll_menu_item *item = ll_menu_get_valid_item(x, index);
-    if (!item)
-        return;
-
-    // ensure flags exist
-    long count = (x->items ? linklist_getsize(x->items) : 0);
-    if (!x->checked_flags || x->items_count != count)
-        ll_menu_ensure_checked_flags(x);
-
-    x->selected_item = index;
-
-    switch (x->checkmode) {
-        case MANUAL:
-            break;
-
-        case SELECTED:
-            memset(x->checked_flags, 0, count);
-            x->checked_flags[index] = 1;
-            break;
-
-        case TOGGLES:
-            x->checked_flags[index] ^= 1;
-            break;
-    }
-
-    jbox_redraw((t_jbox *)x);
-    object_notify(x, gensym("modified"), NULL);
-}
-
-void ll_menu_set_selected_and_output(t_ll_menu *x, long index)
-{
-    t_ll_menu_item *item = ll_menu_get_valid_item(x, index);
-    if (!item)
-        return;
-
-    ll_menu_set_selected_internal(x, index);
-    ll_menu_output(x, index, item);
-
-    // notify parameter/pattr
-    object_notify(x, gensym("modified"), NULL);
-}
-
 t_ll_menu_item *ll_menu_item_new(long ac, t_atom *av)
 {
     t_ll_menu_item *item =
@@ -1276,7 +1246,45 @@ t_ll_menu_item *ll_menu_item_new(long ac, t_atom *av)
     // copy atoms
     if (ac > 0) {
         item->av = (t_atom *)sysmem_newptr(ac * sizeof(t_atom));
-        sysmem_copyptr(av, item->av, ac * sizeof(t_atom));
+        if (!item->av) {
+            sysmem_freeptr(item);
+            return NULL;
+        }
+        for (long i = 0; i < ac; i++) {
+            t_atom *src = &av[i];
+            t_atom *dst = &item->av[i];
+
+            switch (atom_gettype(src)) {
+                case A_LONG:
+                    atom_setlong(dst, atom_getlong(src));
+                    break;
+
+                case A_FLOAT:
+                    atom_setfloat(dst, atom_getfloat(src));
+                    break;
+
+                case A_SYM:
+                    atom_setsym(dst, atom_getsym(src));
+                    break;
+
+                case A_OBJ: {
+                    // dictionary JSON strings come in as A_OBJ
+                    char *text = NULL;
+                    long textsize = 0;
+
+                    // Convert the dict object to a raw string
+                    if (atom_gettext(1, src, &textsize, &text,
+                                     OBEX_UTIL_ATOM_GETTEXT_SYM_NO_QUOTE) == MAX_ERR_NONE) {
+                        atom_setsym(dst, gensym(text));
+                    } else {
+                        atom_setsym(dst, _sym_emptytext);
+                    }
+
+                    if (text)
+                        sysmem_freeptr(text);
+                } break;
+            }
+        }
     }
 
     // convert atoms → canonical text
@@ -1327,7 +1335,7 @@ t_ll_menu_item *ll_menu_item_new(long ac, t_atom *av)
 void ll_menu_item_free(t_ll_menu_item *item)
 {
     if (!item) return;
-    if (item->av) sysmem_freeptr(item->av);
-    if (item->label) sysmem_freeptr(item->label);
+    sysmem_freeptr(item->av);
+    sysmem_freeptr(item->label);
     sysmem_freeptr(item);
 }
