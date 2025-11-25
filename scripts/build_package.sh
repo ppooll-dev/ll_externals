@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =========================
-# build_sign_package.sh
+# build_package.sh
 # Build, Code Sign, and Package ll_externals
 # =========================
 
