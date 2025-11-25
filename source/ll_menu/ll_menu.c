@@ -27,6 +27,7 @@ typedef struct _ll_menu_item {
     long        ac;         // atom count
     t_atom     *av;         // owned array of atoms (raw)
     char       *label;      // canonical C-string label from atom_gettext()
+    char       *full_label; // exact output version "(a)"
 
     char        is_separator;
     char        is_disabled;
@@ -158,7 +159,7 @@ long ll_menu_find_atoms_index(t_ll_menu *x, long ac, t_atom *av)
     // 2) Normal canonical string lookup
     for (long i = 0; i < count; i++) {
         t_ll_menu_item *item = linklist_getindex(x->items, i);
-        if (item && item->label && strcmp(item->label, p) == 0) {
+        if (item && item->full_label && strcmp(item->full_label, p) == 0) {
             sysmem_freeptr(needle);
             return i;
         }
@@ -192,7 +193,7 @@ static t_ll_menu_item *ll_menu_get_valid_item(t_ll_menu *x, long index)
 
     t_ll_menu_item *item = (t_ll_menu_item *)linklist_getindex(x->items, index);
 
-    return (item && item->is_selectable) ? item : NULL;
+    return item ? item : NULL;
 }
 
 void ll_menu_realloc_flags(t_ll_menu *x)
@@ -524,7 +525,7 @@ void ll_menu_paint(t_ll_menu *x, t_object *view)
     if (label[0] == '\0' && !isSeparator) {
         for (long i = 0; i < count; i++) {
             t_ll_menu_item *it = (t_ll_menu_item *)linklist_getindex(x->items, i);
-            if (it && it->is_selectable && it->label) {
+            if (it && it->label) {
                 label = it->label;
                 break;
             }
@@ -1008,7 +1009,7 @@ t_max_err ll_menu_getvalue(t_ll_menu *x, long *ac, t_atom **av)
         if (item->is_separator)
             atom_setsym(*av, gensym(""));
         else
-            atom_setsym(*av, gensym(item->label));
+            atom_setsym(*av, gensym(item->full_label));
     }
     else {
         atom_setsym(*av, gensym(""));
@@ -1194,7 +1195,7 @@ long ll_menu_first_selectable_index(t_ll_menu *x)
 
     for (long i = 0; i < count; i++) {
         t_ll_menu_item *item = (t_ll_menu_item *)linklist_getindex(x->items, i);
-        if (item && item->is_selectable)
+        if (item)
             return i;
     }
 
@@ -1225,7 +1226,7 @@ void ll_menu_validate_selected_item(t_ll_menu *x)
     t_ll_menu_item *item =
         (t_ll_menu_item *)linklist_getindex(x->items, x->selected_item);
 
-    if (!item || !item->is_selectable) {
+    if (!item) {
         long first = ll_menu_first_selectable_index(x);
         x->selected_item = (first >= 0 ? first : 0);
     }
@@ -1317,14 +1318,32 @@ t_ll_menu_item *ll_menu_item_new(long ac, t_atom *av)
     item->is_disabled = (len >= 2 && p[0] == '(' && p[len - 1] == ')');
     item->is_selectable = !item->is_disabled;
 
-    // remove parentheses for disabled labels
-    if (item->is_disabled) {
-        p[len - 1] = 0;   // remove trailing ')'
-        p++;             // skip '('
-        while (*p == ' ') p++;
-    }
+    item->full_label = NULL;
 
-    // Allocate + copy canonical label
+    if (item->is_disabled) {
+        // Remove outer parentheses FIRST
+        p[len - 1] = 0;          // drop trailing ')'
+        char *inner = p + 1;     // skip '('
+        while (*inner == ' ')    // skip whitespace
+            inner++;
+
+        // Full output version "(a)"
+        item->full_label = (char *)sysmem_newptr(strlen(inner) + 3);
+        sprintf(item->full_label, "(%s)", inner);
+
+        // Canonical label = "a"
+        item->label = (char *)sysmem_newptr(strlen(inner) + 1);
+        strcpy(item->label, inner);
+
+        sysmem_freeptr(txt);
+        return item;
+    }
+    
+    // not disabled → full_label = same as canonical text
+    item->full_label = (char *)sysmem_newptr(strlen(p) + 1);
+    strcpy(item->full_label, p);
+
+    // Allocate + copy canonical label (this was missing!)
     item->label = (char *)sysmem_newptr(strlen(p) + 1);
     strcpy(item->label, p);
 
@@ -1337,5 +1356,6 @@ void ll_menu_item_free(t_ll_menu_item *item)
     if (!item) return;
     sysmem_freeptr(item->av);
     sysmem_freeptr(item->label);
+    sysmem_freeptr(item->full_label);
     sysmem_freeptr(item);
 }
