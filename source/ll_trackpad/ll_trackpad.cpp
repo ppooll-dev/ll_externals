@@ -34,13 +34,16 @@ enum ControlMode {
 
 struct RectState {
     bool active;
-    float x;          // normalized 0..1
-    float y;          // normalized 0..1
-    float pressure;   // size / force proxy
-    float velocity;   // attack velocity
+    float x, y;
+    float pressure;
+    float velocity;
     double last_time;
-};
 
+    // add these:
+    float touch_start_x, touch_start_y;
+    float start_x, start_y;
+    bool  absolute;
+};
 
 typedef struct _ll_trackpad
 {
@@ -50,10 +53,9 @@ typedef struct _ll_trackpad
 	void *out_bang;			// bang out for start of frame
     
     void *poll_clock;
-    MTDeviceRef dev;	    // reference to the ll_trackpad device
+    MTDeviceRef dev;	    // reference to the Multitouch device
     
     long enabled;
-    char draw_circles;
 	
     long rows;     // number of rows to draw (0 = none)
     long columns;  // number of columns to draw (0 = none)
@@ -65,9 +67,29 @@ typedef struct _ll_trackpad
     void* finger_to_rect;
     
     char is_mouse_down;
+    char waiting_for_first_touch;
+    char waiting_for_clear;
+    
+    // colors
+    t_jrgba bgcolor;
+    t_jrgba fgcolor;
+    t_jrgba textcolor;
+    t_jrgba bordercolor;   // active border
+    t_jrgba labelcolor;
+    t_jrgba dotcolor;
+    t_jrgba linecolor;     // xy crosshair line color
+
+    // labels
+    void* labels;          // std::vector<t_symbol*>*
+    char  showlabels;
+
+    // xy options
+    long  showxline;       // 0=no 1=yes 2=fill
+    long  showyline;       // 0=no 1=yes 2=fill
+    double dotsize;        // radius in px (0 = none)
+
     
 } t_ll_trackpad;
-
 
 static t_class *s_ll_trackpad_class = NULL;
 
@@ -86,6 +108,10 @@ static inline std::unordered_map<long, long>& FINGER_TO_RECT(t_ll_trackpad* x)
     return *static_cast<std::unordered_map<long, long>*>(x->finger_to_rect);
 }
 
+static inline std::vector<t_symbol*>& LABELS(t_ll_trackpad* x)
+{
+    return *static_cast<std::vector<t_symbol*>*>(x->labels);
+}
 
 extern "C" {int C74_EXPORT main(void);}
 
@@ -123,12 +149,23 @@ static void ll_trackpad_key(t_ll_trackpad *x,
 static void ll_trackpad_focusgained(t_ll_trackpad *x, t_object *pv);
 static void ll_trackpad_focuslost(t_ll_trackpad *x, t_object *pv);
 
+t_max_err ll_trackpad_set_labels(t_ll_trackpad* x, t_object* attr, long argc, t_atom* argv);
+
+void ll_trackpad_getdrawparams(t_ll_trackpad *x, t_object *patcherview, t_jboxdrawparams *params) {}
+
+
 // Attribute setters
 t_max_err ll_trackpad_set_rows(t_ll_trackpad* x, t_object* attr, long argc, t_atom* argv);
 t_max_err ll_trackpad_set_columns(t_ll_trackpad* x, t_object* attr, long argc, t_atom* argv);
 t_max_err ll_trackpad_set_mode(t_ll_trackpad* x, t_object* attr, long argc, t_atom* argv);
-t_max_err ll_trackpad_set_drawcircles(t_ll_trackpad* x, t_object* attr, long argc, t_atom* argv);
 
+t_max_err ll_trackpad_notify(
+    t_ll_trackpad *x,
+    t_symbol *s,
+    t_symbol *msg,
+    void *sender,
+    void *data
+);
 
 static inline long finger_to_rect_index(
     const Finger& f,
@@ -163,7 +200,11 @@ static void ll_trackpad_resize_rects(t_ll_trackpad* x)
         r.y = 0.5f;
         r.pressure = 0.f;
         r.velocity = 0.f;
-        r.last_time = 0.0;
+        r.start_x = r.x;
+        r.start_y = r.y;
+        r.touch_start_x = 0.f;
+        r.touch_start_y = 0.f;
+        r.absolute = false;
     }
 
     map.clear();
@@ -185,20 +226,26 @@ int C74_EXPORT main(void){
 
     c->c_flags |= CLASS_FLAG_NEWDICTIONARY;
 
-    jbox_initclass(c, JBOX_DRAWFIRSTIN);
+    jbox_initclass(c, JBOX_DRAWFIRSTIN | JBOX_COLOR);
 
     class_addmethod(c, (method)ll_trackpad_int, "int", A_LONG, 0);
     class_addmethod(c, (method)ll_trackpad_paint, "paint", A_CANT, 0);
     class_addmethod(c, (method)ll_trackpad_mousedown, "mousedown", A_CANT, 0);
     class_addmethod(c, (method)ll_trackpad_mousemove, "mousemove", A_CANT, 0);
-    class_addmethod(c, (method)ll_trackpad_mousemove, "mouseup", A_CANT, 0);
+    class_addmethod(c, (method)ll_trackpad_mouseup, "mouseup", A_CANT, 0);
 
     class_addmethod(c, (method)ll_trackpad_key, "key", A_CANT, 0);
     class_addmethod(c, (method)ll_trackpad_focusgained, "focusgained", A_CANT, 0);
     class_addmethod(c, (method)ll_trackpad_focuslost,   "focuslost",   A_CANT, 0);
-
+    
+    class_addmethod(c, (method)ll_trackpad_getdrawparams, "getdrawparams", A_CANT, 0);
+    class_addmethod(c, (method)ll_trackpad_notify, "notify", A_CANT, 0);
+    
     CLASS_ATTR_DEFAULT(c,"patching_rect",0, "0. 0. 200. 100.");
 
+    // Behavior
+    CLASS_STICKY_ATTR(c,            "category",  0, "ll_trackpad");
+    
     CLASS_ATTR_LONG(c, "mode", 0, t_ll_trackpad, mode);
     CLASS_ATTR_ENUMINDEX(c, "mode", 0, "raw xy pads");
     CLASS_ATTR_ACCESSORS(c, "mode", NULL, ll_trackpad_set_mode);
@@ -213,12 +260,59 @@ int C74_EXPORT main(void){
     CLASS_ATTR_FILTER_CLIP(c, "columns", 0, 1024);
     CLASS_ATTR_ACCESSORS(c, "columns", NULL, ll_trackpad_set_columns);
     CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "columns", 0, "0");
+    
+    CLASS_ATTR_CHAR(c, "showlabels", 0, t_ll_trackpad, showlabels);
+    CLASS_ATTR_STYLE_LABEL(c, "showlabels", 0, "onoff", "Show Labels");
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "showlabels", 0, "1");
 
-    CLASS_ATTR_CHAR(c, "drawcircles", 0, t_ll_trackpad, draw_circles);
-    CLASS_ATTR_ACCESSORS(c, "drawcircles", NULL, ll_trackpad_set_drawcircles);
-    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "drawcircles", 0, "0");
-    CLASS_ATTR_STYLE_LABEL(c, "drawcircles", 0, "onoff", "Draw circles where fingers pressed");
+    CLASS_ATTR_LONG(c, "showxline", 0, t_ll_trackpad, showxline);
+    CLASS_ATTR_ENUMINDEX(c, "showxline", 0, "no yes fill");
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "showxline", 0, "1");
 
+    CLASS_ATTR_LONG(c, "showyline", 0, t_ll_trackpad, showyline);
+    CLASS_ATTR_ENUMINDEX(c, "showyline", 0, "no yes fill");
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "showyline", 0, "1");
+
+    CLASS_ATTR_DOUBLE(c, "dotsize", 0, t_ll_trackpad, dotsize);
+    CLASS_ATTR_FILTER_CLIP(c, "dotsize", 0.0, 200.0);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "dotsize", 0, "4.0");
+    
+    CLASS_ATTR_ATOM_VARSIZE(c, "labels", 0, t_ll_trackpad, box, box, 0);
+    CLASS_ATTR_ACCESSORS(c, "labels", NULL, ll_trackpad_set_labels);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "labels", 0, "");
+    
+    // Colors
+    CLASS_STICKY_ATTR(c,                "category", 0, "Color");
+
+    CLASS_ATTR_RGBA(c, "bgcolor", 0, t_ll_trackpad, bgcolor);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "bgcolor", 0, "0.12 0.12 0.12 1.");
+    CLASS_ATTR_STYLE_LABEL(c,            "bgcolor", 0, "rgba", "Background Color");
+    
+    CLASS_ATTR_RGBA(c, "fgcolor", 0, t_ll_trackpad, fgcolor);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "fgcolor", 0, "1. 1. 1. 1.");
+    CLASS_ATTR_STYLE_LABEL(c, "fgcolor", 0, "rgba", "Foreground Color");
+
+
+    CLASS_ATTR_RGBA(c, "textcolor", 0, t_ll_trackpad, textcolor);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "textcolor", 0, "1. 1. 1. 1.");
+    CLASS_ATTR_STYLE_LABEL(c,            "textcolor", 0, "rgba", "Text Color");
+
+    CLASS_ATTR_RGBA(c, "bordercolor", 0, t_ll_trackpad, bordercolor);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "bordercolor", 0, "1. 0. 0. 1.");
+    CLASS_ATTR_STYLE_LABEL(c,            "bordercolor", 0, "rgba", "Border Color");
+
+    CLASS_ATTR_RGBA(c, "labelcolor", 0, t_ll_trackpad, labelcolor);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "labelcolor", 0, "1. 1. 1. 0.4");
+    CLASS_ATTR_STYLE_LABEL(c,            "labelcolor", 0, "rgba", "Label Color");
+
+    CLASS_ATTR_RGBA(c, "dotcolor", 0, t_ll_trackpad, dotcolor);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "dotcolor", 0, "1. 1. 1. 0.9");
+    CLASS_ATTR_STYLE_LABEL(c,            "dotcolor", 0, "rgba", "Dot Color");
+
+    CLASS_ATTR_RGBA(c, "linecolor", 0, t_ll_trackpad, linecolor);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c, "linecolor", 0, "1. 1. 1. 0.9");
+    CLASS_ATTR_STYLE_LABEL(c,            "linecolor", 0, "rgba", "Line Color");
+    
     class_register(CLASS_BOX, c);
     s_ll_trackpad_class = c;
     
@@ -237,13 +331,22 @@ void *ll_trackpad_new(t_symbol *s, long argc, t_atom *argv)
     // ---- defaults (safe even if overwritten later) ----
     x->enabled = 0;
     x->is_mouse_down = 0;
-    x->draw_circles = 1;
+    x->waiting_for_clear = 0;
+    x->waiting_for_first_touch = 0;
+    
     x->rows = 0;
     x->columns = 0;
     x->mode = MODE_RAW;
     x->dev = NULL;
+    
+    x->labels = new std::vector<t_symbol*>();
+    x->showlabels = 1;
 
-    long flags = JBOX_DRAWFIRSTIN | JBOX_GROWY | JBOX_GROWBOTH | JBOX_HILITE;
+    x->showxline = 1; // yes
+    x->showyline = 1; // yes
+    x->dotsize = 4.0;
+
+    long flags = JBOX_DRAWFIRSTIN | JBOX_GROWY | JBOX_GROWBOTH | JBOX_HILITE | JBOX_COLOR;
     jbox_new(&x->box, flags, argc, argv);
     x->box.b_firstin = (t_object *)x;
 
@@ -276,10 +379,12 @@ static void ll_trackpad_free(t_ll_trackpad *x)
     delete static_cast<std::vector<Finger>*>(x->draw_fingers);
     delete static_cast<std::vector<RectState>*>(x->rects);
     delete static_cast<std::unordered_map<long, long>*>(x->finger_to_rect);
-
+    delete static_cast<std::vector<t_symbol*>*>(x->labels);
+    
     x->draw_fingers = nullptr;
     x->rects = nullptr;
     x->finger_to_rect = nullptr;
+    x->labels = nullptr;
     
     jbox_free(&x->box);
 }
@@ -323,7 +428,6 @@ static void ll_trackpad_int(t_ll_trackpad *x, long n)
 
 static void ll_trackpad_poll(t_ll_trackpad* x)
 {
-    
     while (true) {
         FingerFrame* frame = mt_engine_pop_frame();
         if (!frame)
@@ -332,10 +436,57 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
         DRAW_FINGERS(x).assign(frame->finger, frame->finger + frame->size);
         outlet_bang(x->out_bang);
 
-        if ((x->mode == MODE_XY || x->mode == MODE_PADS) &&
-            x->rows > 0 && x->columns > 0) {
+        if ((x->mode == MODE_XY || x->mode == MODE_PADS) && x->rows > 0 && x->columns > 0) {
+            // ------------------------------------------------
+            // ARMING LOGIC
+            // ------------------------------------------------
 
+            // Phase 1: wait until NO fingers are touching
+            if (x->waiting_for_clear) {
+                bool any_touching = false;
 
+                for (int i = 0; i < frame->size; ++i) {
+                    if (frame->finger[i].size > 0.0001f) {
+                        any_touching = true;
+                        break;
+                    }
+                }
+
+                if (!any_touching) {
+                    // Surface is now clear
+                    x->waiting_for_clear = 0;
+                    x->waiting_for_first_touch = 1;
+
+                    // Clean slate
+                    FINGER_TO_RECT(x).clear();
+                    for (auto& r : RECTS(x))
+                        r.active = false;
+                }
+
+                // Ignore this frame
+                mt_engine_release_frame(frame);
+                continue;
+            }
+
+            // Phase 2: wait for first NEW touch
+            if (x->waiting_for_first_touch) {
+                bool new_touch = false;
+
+                for (int i = 0; i < frame->size; ++i) {
+                    if (frame->finger[i].size > 0.0001f) {
+                        new_touch = true;
+                        break;
+                    }
+                }
+
+                if (new_touch) {
+                    x->waiting_for_first_touch = 0;
+                    // fall through → normal processing starts NOW
+                } else {
+                    mt_engine_release_frame(frame);
+                    continue;
+                }
+            }
             
             // Track which finger ids exist in this frame (for "disappeared" cleanup)
             std::unordered_set<long> alive;
@@ -343,6 +494,7 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
 
             for (int i = 0; i < frame->size; ++i) {
                 Finger& f = frame->finger[i];
+                
                 long fid = f.identifier;
 
                 alive.insert(fid);
@@ -363,11 +515,10 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
                             RectState& rs = RECTS(x)[owned];
 
                             if (x->mode == MODE_PADS && rs.active) {
-                                t_atom out[3];
-                                atom_setsym(out + 0, gensym("pad"));
-                                atom_setlong(out + 1, owned + 1);
-                                atom_setlong(out + 2, 0);
-                                outlet_list(x->out_list, nullptr, 3, out);
+                                t_atom out[2];
+                                atom_setlong(out + 0, owned);
+                                atom_setlong(out + 1, 0);
+                                outlet_list(x->out_list, nullptr, 2, out);
                             }
 
                             rs.active = false;
@@ -380,6 +531,7 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
 
                 // -----------------------------
                 // OWNERSHIP (claim) — only when size>0
+                // Initialize smoothing ONCE when the finger claims a rect.
                 // -----------------------------
                 if (FINGER_TO_RECT(x).find(fid) == FINGER_TO_RECT(x).end()) {
 
@@ -392,12 +544,32 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
                         }
                     }
 
-                    if (!rect_taken) {
-                        FINGER_TO_RECT(x)[fid] = rect;
-                    } else {
+                    if (rect_taken)
                         continue;
-                    }
 
+                    // claim it
+                    FINGER_TO_RECT(x)[fid] = rect;
+
+                    // one-time init for this rect
+                    RectState& rs_init = RECTS(x)[rect];
+
+                    long col0 = rect % x->columns;
+                    long row0 = rect / x->columns;
+
+                    float cell_x0 = f.normalized.pos.x * x->columns - col0;
+                    float cell_y0 = 1.0f - ((1.0f - f.normalized.pos.y) * x->rows - row0);
+
+                    rs_init.touch_start_x = CLAMP(cell_x0, 0.f, 1.f);
+                    rs_init.touch_start_y = CLAMP(cell_y0, 0.f, 1.f);
+
+                    rs_init.start_x = rs_init.x;
+                    rs_init.start_y = rs_init.y;
+
+                    // click => absolute jump; no click => relative takeover
+                    rs_init.absolute = (x->is_mouse_down != 0);
+
+                    // consume the click so it only affects the first claimed rect
+                    x->is_mouse_down = 0;
                 }
 
                 // Must have an owned rect by now
@@ -407,12 +579,18 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
 
                 rect = it->second;
                 RectState& rs = RECTS(x)[rect];
+                
+                // local normalized coords inside the cell
+                long col = rect % x->columns;
+                long row = rect / x->columns;
+
+                float cell_x = f.normalized.pos.x * x->columns - col;
+                float cell_y = 1.0f - ((1.0f - f.normalized.pos.y) * x->rows - row);
 
                 // =============================
                 // PADS MODE
                 // =============================
                 if (x->mode == MODE_PADS) {
-
                     if (!rs.active) {
                         rs.active = true;
 
@@ -420,38 +598,39 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
                         float velocity = CLAMP(f.size * 127.f, 1.f, 127.f);
                         rs.velocity = velocity;
 
-                        t_atom out[3];
-                        atom_setsym(out + 0, gensym("pad"));
-                        atom_setlong(out + 1, rect + 1);
-                        atom_setlong(out + 2, (long)velocity);
+                        t_atom out[2];
+                        atom_setlong(out + 0, rect);
+                        atom_setlong(out + 1, (long)velocity);
 
-                        outlet_list(x->out_list, nullptr, 3, out);
+                        outlet_list(x->out_list, nullptr, 2, out);
                     }
 
-                    continue; // DO NOT run XY logic
+                    continue;
                 }
 
                 // =============================
-                // XY MODE (existing behavior)
+                // XY MODE
                 // =============================
-                long col = rect % x->columns;
-                long row = rect / x->columns;
+                if (rs.absolute) {
+                    // absolute jump
+                    rs.x = CLAMP(cell_x, 0.f, 1.f);
+                    rs.y = CLAMP(cell_y, 0.f, 1.f);
+                } else {
+                    // relative movement
+                    float dx = cell_x - rs.touch_start_x;
+                    float dy = cell_y - rs.touch_start_y;
 
-                // local normalized coords inside the cell
-                float cell_x = f.normalized.pos.x * x->columns - col;
-                float cell_y = 1.0f - ((1.0f - f.normalized.pos.y) * x->rows - row);
-
-                rs.x = CLAMP(cell_x, 0.f, 1.f);
-                rs.y = CLAMP(cell_y, 0.f, 1.f);
+                    rs.x = CLAMP(rs.start_x + dx, 0.f, 1.f);
+                    rs.y = CLAMP(rs.start_y + dy, 0.f, 1.f);
+                }
                 rs.pressure = f.size;
 
                 // ---- output ----
                 t_atom out[3];
-                atom_setlong(out + 0, rect + 1);
+                atom_setlong(out + 0, rect);
                 atom_setfloat(out + 1, rs.x);
                 atom_setfloat(out + 2, rs.y);
                 outlet_list(x->out_list, nullptr, 3, out);
-
             }
 
             // -----------------------------
@@ -465,11 +644,10 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
                         RectState& rs = RECTS(x)[owned];
 
                         if (x->mode == MODE_PADS && rs.active) {
-                            t_atom out[3];
-                            atom_setsym(out + 0, gensym("pad"));
-                            atom_setlong(out + 1, owned + 1);
-                            atom_setlong(out + 2, 0);
-                            outlet_list(x->out_list, nullptr, 3, out);
+                            t_atom out[2];
+                            atom_setlong(out + 0, owned);
+                            atom_setlong(out + 1, 0);
+                            outlet_list(x->out_list, nullptr, 2, out);
                         }
 
                         rs.active = false;
@@ -482,8 +660,10 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
             }
             
         } else {
-            
-            t_atom list[14];
+            // =============================
+            // RAW MODE
+            // =============================
+            t_atom list[12];
 
             for (int i = 0; i < frame->size; ++i) {
                 Finger& f = frame->finger[i];
@@ -500,15 +680,10 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
                 atom_setfloat(list + 9,  (float)f.identifier);
                 atom_setfloat(list + 10, (float)f.state);
                 atom_setfloat(list + 11, f.size);
-                atom_setfloat(list + 12, 0);
-                atom_setfloat(list + 13, 0);
 
-                outlet_list(x->out_list, nullptr, 14, list);
+                outlet_list(x->out_list, nullptr, 12, list);
             }
-
         }
-
-
         mt_engine_release_frame(frame);
     }
     
@@ -518,7 +693,6 @@ static void ll_trackpad_poll(t_ll_trackpad* x)
     jbox_invalidate_layer((t_object*)x, nullptr, gensym("fingerlayer"));
     jbox_redraw(&x->box);
 }
-
 
 static void finger_color(long id, double &r, double &g, double &b)
 {
@@ -554,7 +728,7 @@ static void ll_trackpad_paint(t_ll_trackpad *x, t_object *view)
 
     if (g) {
         // background
-        jgraphics_set_source_rgba(g, 0.12, 0.12, 0.12, 1.0);
+        jgraphics_set_source_jrgba(g, &x->bgcolor);
         jgraphics_rectangle(g, 0, 0, r.width, r.height);
         jgraphics_fill(g);
         
@@ -584,16 +758,11 @@ static void ll_trackpad_paint(t_ll_trackpad *x, t_object *view)
             jgraphics_stroke(g);
         }
         
-        if ((x->mode == MODE_XY || x->mode == MODE_PADS) &&
-            x->rows > 0 && x->columns > 0) {
-
-
+        if ((x->mode == MODE_XY || x->mode == MODE_PADS) && x->rows > 0 && x->columns > 0) {
             double cell_w = r.width  / (double)x->columns;
             double cell_h = r.height / (double)x->rows;
 
             for (long i = 0; i < (long)RECTS(x).size(); ++i) {
-                
-                
                 long col = i % x->columns;
                 long row = i / x->columns;
 
@@ -618,36 +787,81 @@ static void ll_trackpad_paint(t_ll_trackpad *x, t_object *view)
                     }
                     continue;
                 }
+                
+                
+                // compute intersection px
+                double ix = cx + rs.x * cell_w;
+                double iy = cy + (1.0 - rs.y) * cell_h;
+
+                // optional fill regions first (so lines/dot draw on top)å
+                if (rs.active) {
+                    if (x->showxline == 2) { // fill (x axis => fill left->ix)
+                        jgraphics_set_source_jrgba(g, &x->linecolor);
+                        jgraphics_rectangle(g, cx, cy, (ix - cx), cell_h);
+                        jgraphics_fill(g);
+                    }
+                    if (x->showyline == 2) { // fill (y axis => fill bottom->iy)
+                        jgraphics_set_source_jrgba(g, &x->linecolor);
+                        jgraphics_rectangle(g, cx, iy, cell_w, (cy + cell_h - iy));
+                        jgraphics_fill(g);
+                    }
+                }
 
                 // fader lines
-                jgraphics_set_source_rgba(g, 1, 1, 1, rs.active ? 0.9 : 0.3);
+                jgraphics_set_source_jrgba(g, &x->linecolor);
                 jgraphics_set_line_width(g, 2.0);
 
                 // vertical
-                jgraphics_move_to(g,
-                    cx + rs.x * cell_w,
-                    cy);
-                jgraphics_line_to(g,
-                    cx + rs.x * cell_w,
-                    cy + cell_h);
+                if (x->showyline == 1) { // vertical line
+                    
+                    jgraphics_move_to(g,
+                                      cx + rs.x * cell_w,
+                                      cy);
+                    jgraphics_line_to(g,
+                                      cx + rs.x * cell_w,
+                                      cy + cell_h);
+                    jgraphics_stroke(g);
+
+                }
 
                 // horizontal
-                jgraphics_move_to(g,
-                    cx,
-                    cy + (1.0 - rs.y) * cell_h);
-                jgraphics_line_to(g,
-                    cx + cell_w,
-                    cy + (1.0 - rs.y) * cell_h);
+                if (x->showxline == 1) { // horizontal line
+                    
+                    jgraphics_move_to(g,
+                                      cx,
+                                      cy + (1.0 - rs.y) * cell_h);
+                    jgraphics_line_to(g,
+                                      cx + cell_w,
+                                      cy + (1.0 - rs.y) * cell_h);
+                    
+                    jgraphics_stroke(g);
+                }
+                
+                // dot at intersection
+                if (x->dotsize > 0.0) {
+                    jgraphics_set_source_jrgba(g, &x->dotcolor);
+                    jgraphics_arc(g, ix, iy, x->dotsize, 0, JGRAPHICS_2PI);
+                    jgraphics_fill(g);
+                }
 
-                jgraphics_stroke(g);
+                if (x->showlabels) {
+                    const char* txt = nullptr;
 
-                // rect label
-                char label[8];
-                snprintf(label, 8, "%ld", i + 1);
+                    auto& labs = LABELS(x);
+                    if (!labs.empty() && i < (long)labs.size()) {
+                        txt = labs[i]->s_name;
+                    } else {
+                        // default numeric
+                        static char buf[16];
+                        snprintf(buf, 16, "%ld", i);
+                        txt = buf;
+                    }
 
-                jgraphics_set_source_rgba(g, 1, 1, 1, 0.4);
-                jgraphics_move_to(g, cx + 6, cy + cell_h - 6);
-                jgraphics_show_text(g, label);
+                    jgraphics_set_source_jrgba(g, &x->labelcolor);
+                    jgraphics_move_to(g, cx + 6, cy + cell_h - 6);
+                    jgraphics_show_text(g, txt);
+                }
+
             }
         } else {
             
@@ -683,24 +897,22 @@ static void ll_trackpad_paint(t_ll_trackpad *x, t_object *view)
                     jgraphics_fill(g);
                 }
                 
-                if(x->draw_circles) {
-                    jgraphics_set_source_rgba(g, cr, cg, cb, 0.9);
-                    jgraphics_arc(g, xpx, ypx, rad, 0, JGRAPHICS_2PI);
-                    jgraphics_fill(g);
+                jgraphics_set_source_rgba(g, cr, cg, cb, 0.9);
+                jgraphics_arc(g, xpx, ypx, rad, 0, JGRAPHICS_2PI);
+                jgraphics_fill(g);
+                
+                if(true) { // draw angles
                     
-                    if(true) { // draw angles
-                        
-                        // angle "clock hand"
-                        double len = rad;
-                        double dx = cos(f.angle) * len;
-                        double dy = -sin(f.angle) * len;
-                        
-                        jgraphics_set_source_rgba(g, 0.12, 0.12, 0.12, 1.0);
-                        jgraphics_set_line_width(g, 2.0);
-                        jgraphics_move_to(g, xpx, ypx);
-                        jgraphics_line_to(g, xpx + dx, ypx + dy);
-                        jgraphics_stroke(g);
-                    }
+                    // angle "clock hand"
+                    double len = rad;
+                    double dx = cos(f.angle) * len;
+                    double dy = -sin(f.angle) * len;
+                    
+                    jgraphics_set_source_rgba(g, 0.12, 0.12, 0.12, 1.0);
+                    jgraphics_set_line_width(g, 2.0);
+                    jgraphics_move_to(g, xpx, ypx);
+                    jgraphics_line_to(g, xpx + dx, ypx + dy);
+                    jgraphics_stroke(g);
                 }
             }
         }
@@ -710,17 +922,10 @@ static void ll_trackpad_paint(t_ll_trackpad *x, t_object *view)
             const double border = 5.0;
             const double inset = border * 0.5;
 
-            jgraphics_set_source_rgba(g, 1.0, 0.0, 0.0, 1.0);
+            jgraphics_set_source_rgba(g,
+                x->bordercolor.red, x->bordercolor.green, x->bordercolor.blue, x->bordercolor.alpha);
             jgraphics_set_line_width(g, border);
-
-            jgraphics_rectangle(
-                g,
-                inset,
-                inset,
-                r.width  - border,
-                r.height - border
-            );
-
+            jgraphics_rectangle(g, inset, inset, r.width - border, r.height - border);
             jgraphics_stroke(g);
         }
 
@@ -756,7 +961,6 @@ static void ll_trackpad_mousemove(t_ll_trackpad *x,
     double lx = CLAMP(pt.x - r.x, 0, r.width);
     double ly = CLAMP(pt.y - r.y, 0, r.height);
 
-
     jmouse_setposition_box(patcherview, (t_object *)x, r.width / 2, r.height / 2);
 }
 
@@ -766,16 +970,8 @@ static void ll_trackpad_mousedown(t_ll_trackpad *x,
                                  t_pt pt,
                                  long modifiers)
 {
-    if (!x->enabled) {
+    if (!x->enabled)
         x->is_mouse_down = 1;
-        jbox_grabfocus(&x->box);
-        ll_trackpad_int(x, 1);
-        ll_trackpad_set_cursor(x, patcherview, 1); // hide cursor
-    }
-//    else {
-//        ll_trackpad_int(x, 0);
-//        ll_trackpad_set_cursor(x, patcherview, 0); // show cursor
-//    }
 }
 
 static void ll_trackpad_mouseup(t_ll_trackpad *x,
@@ -783,17 +979,15 @@ static void ll_trackpad_mouseup(t_ll_trackpad *x,
                                  t_pt pt,
                                  long modifiers)
 {
-//    if (!x->enabled && x->is_mouse_down) {
-//        jbox_grabfocus(&x->box);
-//        ll_trackpad_int(x, 1);
-//        ll_trackpad_set_cursor(x, patcherview, 1); // hide cursor
-//    }
-//    x->is_mouse_down = 0;
-
-//    else {
-//        ll_trackpad_int(x, 0);
-//        ll_trackpad_set_cursor(x, patcherview, 0); // show cursor
-//    }
+    if (!x->enabled && x->is_mouse_down) {
+        jbox_grabfocus(&x->box);
+        ll_trackpad_int(x, 1);
+        ll_trackpad_set_cursor(x, patcherview, 1); // hide cursor
+        
+        x->waiting_for_clear = 1;
+        x->waiting_for_first_touch = 0;
+    }
+    x->is_mouse_down = 0;
 }
 
 
@@ -803,8 +997,8 @@ static void ll_trackpad_key(t_ll_trackpad *x,
                            long modifiers,
                            long textcharacter)
 {
-    // ESC by keycode or textcharacter depending on what you want:
-    if (textcharacter == 27 || textcharacter == 32) {
+    // ESC, space, delete by keycode or textcharacter depending on what you want:
+    if (textcharacter == 27 || textcharacter == 32 || textcharacter == 127) {
         ll_trackpad_int(x, 0);
         ll_trackpad_set_cursor(x, patcherview, 0); // show cursor
     }
@@ -865,16 +1059,39 @@ t_max_err ll_trackpad_set_mode(t_ll_trackpad* x, t_object* attr, long argc, t_at
     return MAX_ERR_NONE;
 }
 
-t_max_err ll_trackpad_set_drawcircles(t_ll_trackpad* x, t_object* attr, long argc, t_atom* argv)
+t_max_err ll_trackpad_set_labels(t_ll_trackpad* x, t_object* attr, long argc, t_atom* argv)
 {
-    if (argc && argv) {
-        char v = (char)atom_getlong(argv);
+    auto& v = LABELS(x);
+    v.clear();
 
-        if (x->draw_circles != v) {
-            x->draw_circles = v;
-            jbox_invalidate_layer((t_object*)x, nullptr, gensym("fingerlayer"));
-            jbox_redraw(&x->box);
+    for (long i = 0; i < argc; ++i) {
+        if (atom_gettype(argv + i) == A_SYM) {
+            v.push_back(atom_getsym(argv + i));
+        } else if (atom_gettype(argv + i) == A_LONG) {
+            // allow numeric labels: 1 2 3
+            char buf[32];
+            snprintf(buf, 32, "%ld", atom_getlong(argv + i));
+            v.push_back(gensym(buf));
+        } else if (atom_gettype(argv + i) == A_FLOAT) {
+            char buf[32];
+            snprintf(buf, 32, "%.3g", atom_getfloat(argv + i));
+            v.push_back(gensym(buf));
         }
     }
+
+    jbox_invalidate_layer((t_object*)x, nullptr, gensym("fingerlayer"));
+    jbox_redraw(&x->box);
     return MAX_ERR_NONE;
+}
+
+t_max_err ll_trackpad_notify(
+    t_ll_trackpad *x,
+    t_symbol *s,
+    t_symbol *msg,
+    void *sender,
+    void *data
+){
+    jbox_invalidate_layer((t_object*)x, nullptr, gensym("fingerlayer"));
+
+    return jbox_notify((t_jbox *)x, s, msg, sender, data);
 }
