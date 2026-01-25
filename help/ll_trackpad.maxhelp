@@ -9,16 +9,62 @@
             "modernui": 1
         },
         "classnamespace": "box",
-        "rect": [ 34.0, 100.0, 1125.0, 790.0 ],
+        "rect": [ 107.0, 100.0, 1126.0, 790.0 ],
         "subpatcher_template": "js_default",
         "boxes": [
+            {
+                "box": {
+                    "fontface": 0,
+                    "fontname": "Arial",
+                    "id": "obj-45",
+                    "items": "<empty>",
+                    "maxclass": "ll_menu",
+                    "numinlets": 1,
+                    "numoutlets": 3,
+                    "outlettype": [ "", "", "" ],
+                    "parameter_enable": 0,
+                    "patching_rect": [ 788.0, 532.81, 100.0, 24.0 ],
+                    "prefix": ""
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-51",
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 648.0000000000001, 385.0, 99.79999999999995, 20.0 ],
+                    "text": "   w/ pan"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-52",
+                    "maxclass": "message",
+                    "numinlets": 2,
+                    "numoutlets": 1,
+                    "outlettype": [ "" ],
+                    "patching_rect": [ 713.0000000000001, 384.0, 352.0, 22.0 ],
+                    "text": "mode 1, columns 4, rows 1, showxline 1, showyline 0, dotsize 16"
+                }
+            },
+            {
+                "box": {
+                    "id": "obj-50",
+                    "maxclass": "comment",
+                    "numinlets": 1,
+                    "numoutlets": 0,
+                    "patching_rect": [ 644.0, 273.0, 219.0, 20.0 ],
+                    "text": "touchmodes: mouseclick, doublefinger"
+                }
+            },
             {
                 "box": {
                     "id": "obj-44",
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 927.0, 286.0, 172.0, 20.0 ],
+                    "patching_rect": [ 850.0, 51.0, 172.0, 20.0 ],
                     "text": "TODO labels in pad mode"
                 }
             },
@@ -29,7 +75,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 927.0, 229.0, 172.0, 47.0 ],
+                    "patching_rect": [ 927.0, 237.5, 172.0, 47.0 ],
                     "text": "TODO reordering rectangles\nbottom left corner, left to right then up"
                 }
             },
@@ -39,7 +85,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 644.0, 276.0, 271.0, 20.0 ],
+                    "patching_rect": [ 644.0, 251.0, 271.0, 20.0 ],
                     "text": "font (size, style)"
                 }
             },
@@ -49,7 +95,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 644.0, 249.0, 271.0, 20.0 ],
+                    "patching_rect": [ 644.0, 229.0, 271.0, 20.0 ],
                     "text": "y lock modifier (hold down to lock x axis"
                 }
             },
@@ -59,7 +105,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 644.0, 227.0, 271.0, 20.0 ],
+                    "patching_rect": [ 644.0, 207.0, 271.0, 20.0 ],
                     "text": "x lock modifier (hold down to lock x axis"
                 }
             },
@@ -79,7 +125,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 850.0, 155.0, 150.0, 20.0 ],
+                    "patching_rect": [ 850.0, 135.0, 150.0, 20.0 ],
                     "text": "<< TODO \"fill\""
                 }
             },
@@ -123,7 +169,7 @@
                             "modernui": 1
                         },
                         "classnamespace": "box",
-                        "rect": [ 34.0, 100.0, 1444.0, 789.0 ],
+                        "rect": [ 482.0, 234.0, 459.0, 465.0 ],
                         "subpatcher_template": "js_default",
                         "boxes": [
                             {
@@ -501,7 +547,7 @@
                         [ 0, 2, 1, 0.0, 0.0, 0.0, 1.0, 1, 0.0, 0.0, 0.0, 1.0, -1, -1, -1 ]
                     ],
                     "colhead": 1,
-                    "cols": 3,
+                    "cols": 4,
                     "colwidth": 54,
                     "fontface": 0,
                     "fontname": "Arial",
@@ -514,7 +560,7 @@
                     "outlettype": [ "list", "", "", "" ],
                     "patching_rect": [ 178.0, 565.0, 717.0, 190.0 ],
                     "rowhead": 1,
-                    "rows": 11
+                    "rows": 5
                 }
             },
             {
@@ -525,7 +571,7 @@
                     "numinlets": 1,
                     "numoutlets": 1,
                     "outlettype": [ "bang" ],
-                    "patching_rect": [ 870.0, 355.0, 58.0, 22.0 ],
+                    "patching_rect": [ 870.0000000000001, 327.0, 58.0, 22.0 ],
                     "text": "loadbang"
                 }
             },
@@ -535,7 +581,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 630.0, 327.0, 150.0, 20.0 ],
+                    "patching_rect": [ 630.0, 305.0, 150.0, 20.0 ],
                     "text": "examples:"
                 }
             },
@@ -558,7 +604,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 644.0, 194.0, 204.0, 22.0 ]
+                    "patching_rect": [ 644.0, 174.0, 204.0, 22.0 ]
                 }
             },
             {
@@ -592,7 +638,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 644.0, 170.0, 204.0, 22.0 ]
+                    "patching_rect": [ 644.0, 150.0, 204.0, 22.0 ]
                 }
             },
             {
@@ -604,7 +650,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 644.0, 146.0, 204.0, 22.0 ]
+                    "patching_rect": [ 644.0, 126.0, 204.0, 22.0 ]
                 }
             },
             {
@@ -616,7 +662,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "parameter_enable": 0,
-                    "patching_rect": [ 644.0, 75.0, 204.0, 22.0 ]
+                    "patching_rect": [ 644.0, 74.0, 204.0, 22.0 ]
                 }
             },
             {
@@ -755,7 +801,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 648.0, 356.0, 150.0, 20.0 ],
+                    "patching_rect": [ 648.0000000000001, 328.0, 150.0, 20.0 ],
                     "text": "Trackpad"
                 }
             },
@@ -786,7 +832,7 @@
                     "maxclass": "comment",
                     "numinlets": 1,
                     "numoutlets": 0,
-                    "patching_rect": [ 648.0, 390.0, 99.79999999999995, 20.0 ],
+                    "patching_rect": [ 648.0000000000001, 362.0, 99.79999999999995, 20.0 ],
                     "text": "Faders"
                 }
             },
@@ -839,7 +885,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 713.0, 389.0, 345.0, 22.0 ],
+                    "patching_rect": [ 713.0000000000001, 361.0, 345.0, 22.0 ],
                     "text": "mode 1, columns 4, rows 1, showxline 1, showyline 0, dotsize 0"
                 }
             },
@@ -872,7 +918,7 @@
                     "numinlets": 2,
                     "numoutlets": 1,
                     "outlettype": [ "" ],
-                    "patching_rect": [ 713.0, 355.0, 152.0, 22.0 ],
+                    "patching_rect": [ 713.0000000000001, 327.0, 152.0, 22.0 ],
                     "text": "mode 0, columns 0, rows 0"
                 }
             },
@@ -919,7 +965,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "patching_rect": [ 12.0, 518.0, 506.0, 22.0 ],
-                    "text": "9 0"
+                    "text": "3 0.603801 0.267207"
                 }
             },
             {
@@ -937,20 +983,20 @@
                 "box": {
                     "bgcolor": [ 0.23921568627451, 0.23921568627451, 0.23921568627451, 1.0 ],
                     "color": [ 0.8705882352941177, 0.5372549019607843, 0.5372549019607843, 1.0 ],
-                    "columns": 4,
-                    "dotcolor": [ 0.0, 0.9343122243881226, 0.0, 1.0 ],
+                    "columns": 2,
+                    "dotcolor": [ 0.9658605456352234, 1.0, 0.9699144959449768, 1.0 ],
                     "dotsize": 10.0,
                     "fgcolor": [ 0.24885037541389465, 0.5181236863136292, 1.0, 1.0 ],
                     "id": "obj-1",
-                    "labelcolor": [ 1.0, 0.04413869231939316, 0.8510197401046753, 1.0 ],
+                    "labelcolor": [ 0.4677417278289795, 0.501061737537384, 0.469826877117157, 1.0 ],
                     "linecolor": [ 0.9999999403953552, 1.0, 1.0, 0.27578125 ],
                     "maxclass": "ll_trackpad",
-                    "mode": 2,
+                    "mode": 1,
                     "numinlets": 1,
                     "numoutlets": 2,
                     "outlettype": [ "list", "bang" ],
                     "patching_rect": [ 12.0, 140.0, 614.0, 366.0 ],
-                    "rows": 3,
+                    "rows": 2,
                     "textcolor": [ 0.6191717982292175, 0.3228987455368042, 1.0, 1.0 ]
                 }
             }
@@ -1129,6 +1175,13 @@
                     "destination": [ "obj-1", 0 ],
                     "hidden": 1,
                     "source": [ "obj-41", 0 ]
+                }
+            },
+            {
+                "patchline": {
+                    "destination": [ "obj-1", 0 ],
+                    "hidden": 1,
+                    "source": [ "obj-52", 0 ]
                 }
             },
             {
