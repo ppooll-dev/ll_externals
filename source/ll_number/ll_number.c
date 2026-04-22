@@ -799,6 +799,15 @@ void ll_number_redraw(t_ll_number *x){
 
 // Match first atom "symbol" to a label and set the value
 void ll_number_anything(t_ll_number *x, t_symbol *s, long ac, t_atom *av){
+    if (ac == 0) {
+        char *end;
+        double val = strtod(s->s_name, &end);
+        if (end != s->s_name && *end == '\0') {
+            // The whole symbol was a valid number
+            ll_number_float(x, val);
+            return;
+        }
+    }
     if(ac == 1) {
         double value = atom_getfloat(&av[0]);
         for(int i = 0; i < x->ll_amount; i++) {
@@ -907,11 +916,27 @@ void ll_number_set(t_ll_number *x, t_symbol *s, short ac, t_atom *av){
 t_max_err ll_number_setvalueof(t_ll_number *x, long ac, t_atom *av){
     if(!ac || !av)
         return MAX_ERR_NONE;
+    
+    // If a single symbol atom arrives, try to parse it as a number
+    if (ac == 1 && atom_gettype(av) == A_SYM) {
+        char *end;
+        const char *sym_name = atom_getsym(av)->s_name;
+        double val = strtod(sym_name, &end);
+        if (!(end != sym_name && *end == '\0')) {
+            val = 0.0;  // Not a valid number, default to 0
+        }
+        t_atom num_atom;
+        atom_setfloat(&num_atom, val);
+        atom_setatom_array(1, x->ll_vala, 1, &num_atom);
+        x->ll_amount = 1;
+        jbox_redraw(&x->ll_box);
+        ll_number_bang(x);
+        return MAX_ERR_NONE;
+    }
         
-    atom_setatom_array(ac ,x->ll_vala, ac, av);
+    atom_setatom_array(ac, x->ll_vala, ac, av);
     x->ll_amount = ac;
     jbox_redraw(&x->ll_box);
-    
     ll_number_bang(x);
     return MAX_ERR_NONE;
 }
@@ -1292,13 +1317,19 @@ long ll_number_key(t_ll_number *x, t_object *patcherview, long keycode, long mod
             ll_number_endtyping(x);
             break;
 
-        case TEXTCHAR_ESCAPE:
-            x->ll_is_typing = false;
-            memset(&x->ll_buffer, 0, sizeof(x->ll_buffer));
-            break;
+        // case TEXTCHAR_ESCAPE:
+        //     x->ll_is_typing = false;
+        //     memset(&x->ll_buffer, 0, sizeof(x->ll_buffer));
+        //     x->ll_is_object_selected = false;
+        //     jbox_redraw(&x->ll_box);
+        //     return 0;  // let Max handle it, releases focus naturally
 
         default:
-            break;
+            x->ll_is_typing = false;
+            memset(&x->ll_buffer, 0, sizeof(x->ll_buffer));
+            x->ll_is_object_selected = false;
+            jbox_redraw(&x->ll_box);
+            return 0;  // let Max handle it, releases focus naturally
     }
     return 1;
 }
