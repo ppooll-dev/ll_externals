@@ -89,7 +89,7 @@ void ll_menu_show(t_ll_menu *x); // show menu
 // messages: modify "items" attr
 void ll_menu_clear(t_ll_menu *x);
 void ll_menu_append(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv);
-void ll_menu_insert(t_ll_menu *x, long index, long argc, t_atom *argv);
+void ll_menu_insert(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv);
 void ll_menu_delete(t_ll_menu *x, long index);
 
 // messages: check items
@@ -293,7 +293,7 @@ void ext_main(void *r)
     
     class_addmethod(c, (method)ll_menu_clear,  "clear", 0);
     class_addmethod(c, (method)ll_menu_append, "append", A_GIMME, 0);
-    class_addmethod(c, (method)ll_menu_insert, "insert", A_LONG, A_GIMME, 0);
+    class_addmethod(c, (method)ll_menu_insert, "insert", A_GIMME, 0);
     class_addmethod(c, (method)ll_menu_delete, "delete", A_LONG, 0);
     
     class_addmethod(c, (method)ll_menu_int,        "int",        A_LONG, 0);
@@ -875,20 +875,33 @@ void ll_menu_append(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv)
     ll_menu_post_items_changed(x, object_attr_get((t_object *)x, sym_items));
 }
 
-void ll_menu_insert(t_ll_menu *x, long index, long argc, t_atom *argv)
+// method signature
+void ll_menu_insert(t_ll_menu *x, t_symbol *s, long argc, t_atom *argv)
 {
-    if (!x->items)
+    if (argc < 1)
         return;
 
+    long index = atom_getlong(argv);       // first atom is the index
+    argc--;                                 // remaining atoms are the item
+    argv++;
+
+    if (!x->items) {
+        x->items = linklist_new();
+        linklist_flags(x->items, OBJ_FLAG_DATA);
+    }
+
     long size = linklist_getsize(x->items);
-    if (index < 0) index = 0;
+    if (index < 0)    index = 0;
     if (index > size) index = size;
 
     t_ll_menu_item *item = ll_menu_item_new(argc, argv);
     if (!item)
         return;
 
-    linklist_insertindex(x->items, item, index);
+    if (index >= size)
+        linklist_append(x->items, item);
+    else
+        linklist_insertindex(x->items, item, index);
 
     ll_menu_post_items_changed(x, object_attr_get((t_object *)x, sym_items));
 }
