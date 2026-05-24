@@ -124,6 +124,8 @@ typedef struct _ll_number
 
     char        ll_format_point_pos;
     double      ll_formfactor;                  // The decimal location of the selected number ???
+
+    bool        ll_format_is_auto;
     
     char		ll_pval[MAX_TEXT_LENGTH];
     char		ll_buffer[MAX_TEXT_LENGTH];
@@ -537,11 +539,11 @@ void ll_number_printf(t_ll_number *x, double f) {
         if (f < 0.0)
             x->ll_pval[0] = '-';
 
-        f = fabs(f) + 1e-7; // Small epsilon to avoid floating-point issues.
+        f = fabs(f) + 1e-7;
 
         for (long i = 0; i < x->ll_format_len; i++) {
             t_atom *tform = &x->ll_format[i];
-            switch ( atom_gettype(tform) ) {
+            switch (atom_gettype(tform)) {
                 case A_LONG: {
                     long divisor = atom_getlong(tform);
                     snprintf(str, sizeof(str), "%ld", (long)(f / divisor));
@@ -559,16 +561,33 @@ void ll_number_printf(t_ll_number *x, double f) {
                     snprintf(str, sizeof(str), "%s", sym_name);
                     break;
                 }
-                default: {
-                    post("Error: Unknown atom type at position %ld. Skipping.", i + 1);
+                default:
                     continue;
-                }
             }
             strncat(x->ll_pval, str, sizeof(x->ll_pval) - strlen(x->ll_pval) - 1);
         }
-    } else { // Single format case
-        int width = (f < 0.0) ? x->ll_format_whole + 1 : x->ll_format_whole;
-        snprintf(x->ll_pval, sizeof(x->ll_pval), "%0*.*f", width, x->ll_format_fraction, f);
+    } else {
+        if (x->ll_format_is_auto) {
+            snprintf(x->ll_pval, sizeof(x->ll_pval), "%.9g", f);
+
+            // update format fields to match actual rendered string
+            char *dot = strchr(x->ll_pval, '.');
+            if (dot) {
+                int frac = (int)strlen(dot + 1);
+                x->ll_format_fraction = frac;
+                x->ll_format_whole = (int)(dot - x->ll_pval);
+                x->ll_format_point_pos = x->ll_format_whole;
+                x->ll_format_whole += frac + 1;
+            } else {
+                // integer-like value, no decimal point
+                x->ll_format_fraction = 0;
+                x->ll_format_whole = (int)strlen(x->ll_pval);
+                x->ll_format_point_pos = x->ll_format_whole;
+            }
+        } else {
+            int width = (f < 0.0) ? x->ll_format_whole + 1 : x->ll_format_whole;
+            snprintf(x->ll_pval, sizeof(x->ll_pval), "%0*.*f", width, x->ll_format_fraction, f);
+        }
     }
 }
 
@@ -871,7 +890,7 @@ void ll_number_assign_value(t_ll_number *x, double f) {
 double ll_number_constrain(t_ll_number *x, double f) {
     int m = 1;
     for (int i = 0; i < x->ll_format_fraction; i++) {
-        m *= 10; // Calculate 10^ll_format_fraction without pow()
+        m *= 10;
     }
     bool has_min = ll_number_is_atom_a_number(1, &x->ll_min);
     bool has_max = ll_number_is_atom_a_number(1, &x->ll_max);
@@ -882,7 +901,7 @@ double ll_number_constrain(t_ll_number *x, double f) {
     if (has_max && (f > atom_getfloat(&x->ll_max))) {
         f = atom_getfloat(&x->ll_max);
     }
-    if (x->ll_mouse_focus_mode == MOUSE_FOCUS_NUMBER) {
+    if (x->ll_mouse_focus_mode == MOUSE_FOCUS_NUMBER && !x->ll_format_is_auto) {
         f = round(f * m) / m;
     }
     return f;
@@ -959,7 +978,7 @@ void ll_number_pos(t_ll_number *x, double pos) {
 }
 
 //  Set value from position
-void ll_number_assign_position(t_ll_number *x, double pos) {
+void ll_number_assign_position(t_ll_number *x, double f) {
     double min = x->ll_slider_min;
     double max = x->ll_slider_max;
     double slider_log = x->ll_slider_log;
@@ -967,28 +986,29 @@ void ll_number_assign_position(t_ll_number *x, double pos) {
     double slider_diff = max - min;
     double split_pos = -min / slider_diff;
 
-    // Clamp pos to [0, 1]
-    if (pos > 1.0) pos = 1.0;
-    if (pos < 0.0) pos = 0.0;
+    if (f > 1.0) f = 1.0;
+    if (f < 0.0) f = 0.0;
 
     double val;
     if (slider_log == 0) {
-        val = pos * slider_diff + min;
+        val = f * slider_diff + min;
     } else if (!x->ll_zerosplitslog) {
         double exp_neg_log = exp(-slider_log);
-        val = (exp((pos - 1.0) * slider_log) - 1) / (exp_neg_log - 1) * (min - max) + max;
+        val = (exp((f - 1.0) * slider_log) - 1) / (exp_neg_log - 1) * (min - max) + max;
     } else {
-        if (pos >= split_pos) {
+        if (f >= split_pos) {
             double exp_neg_log = exp(-slider_log);
-            val = (exp(((pos - split_pos) / (1 - split_pos) - 1) * slider_log) - 1) / (exp_neg_log - 1) * -max + max;
+            val = (exp(((f - split_pos) / (1 - split_pos) - 1) * slider_log) - 1) / (exp_neg_log - 1) * -max + max;
         } else {
             double exp_pos_log = exp(slider_log);
-            val = (exp((pos / split_pos - 1) * -slider_log) - 1) / (exp_pos_log - 1) * min;
+            val = (exp((f / split_pos - 1) * -slider_log) - 1) / (exp_pos_log - 1) * min;
         }
     }
-    // Round value according to attribute "format"
-    double scale = pow(10.0, x->ll_format_fraction);
-    val = round(val * scale) / scale;
+
+    if (!x->ll_format_is_auto) {
+        double scale = pow(10.0, x->ll_format_fraction);
+        val = round(val * scale) / scale;
+    }
     
     ll_number_assign_value(x, val);
 }
@@ -1483,11 +1503,21 @@ t_max_err ll_number_setattr_ll_format(t_ll_number *x, void *attr, long ac, t_ato
         error("Could not parse format. Reverting to default format 3.2.");
     else if (ac < 1)
         error("No format specified. Reverting to default format 3.2.");
-    else if( !ll_number_is_atom_a_number(1, &av[0]) )
+    else if (ac == 1 && atom_gettype(&av[0]) == A_SYM &&
+             strcmp(atom_getsym(&av[0])->s_name, "auto") == 0) {
+        x->ll_format_is_auto = true;
+        x->ll_format_fraction = 9;
+        x->ll_format_whole = 11;
+        x->ll_format_is_int = false;
+        x->ll_format_len = 1;
+        return MAX_ERR_NONE;
+    }
+    else if (!ll_number_is_atom_a_number(1, &av[0]))
         error("Leading symbol in format. Reverting to default format 3.2.");
     else
         format_float = atom_getfloat(&av[0]);
-    
+
+    x->ll_format_is_auto = false;
     x->ll_format_len = ac;
     x->ll_format_fraction = (int)round(fmod(format_float, 1) * 10);
     x->ll_format_whole = (int)format_float;
@@ -1496,7 +1526,7 @@ t_max_err ll_number_setattr_ll_format(t_ll_number *x, void *attr, long ac, t_ato
 
     if (x->ll_format_fraction)
         x->ll_format_whole += x->ll_format_fraction + 1;
-    
+
     return MAX_ERR_NONE;
 }
 
