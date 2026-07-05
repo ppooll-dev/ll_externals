@@ -4,7 +4,7 @@
         "appversion": {
             "major": 9,
             "minor": 1,
-            "revision": 1,
+            "revision": 4,
             "architecture": "x64",
             "modernui": 1
         },
@@ -24,7 +24,7 @@
                         "appversion": {
                             "major": 9,
                             "minor": 1,
-                            "revision": 1,
+                            "revision": 4,
                             "architecture": "x64",
                             "modernui": 1
                         },
@@ -115,25 +115,22 @@
                             {
                                 "box": {
                                     "id": "obj-12",
-                                    "linecount": 3,
                                     "maxclass": "message",
                                     "numinlets": 2,
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
-                                    "patching_rect": [ 291.0, 141.0, 459.0, 49.0 ],
-                                    "text": "\"Macintosh HD:/Users/josephsteccato/Desktop/test_filewatchers/folder1\" \"Macintosh HD:/Users/josephsteccato/Desktop/test_filewatchers/folder2\" \"Macintosh HD:/Users/josephsteccato/Desktop/test_filewatchers/folder3\""
+                                    "patching_rect": [ 204.0, 151.0, 182.0, 22.0 ],
+                                    "text": "C:/some/folder, D:/another/folder"
                                 }
                             },
                             {
                                 "box": {
                                     "id": "obj-8",
-                                    "linecount": 3,
                                     "maxclass": "message",
                                     "numinlets": 2,
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
-                                    "patching_rect": [ 135.0, 337.0, 309.0, 49.0 ],
-                                    "text": "0 \"Macintosh HD:/Users/josephsteccato/Desktop/test_filewatchers/folder1\""
+                                    "patching_rect": [ 135.0, 337.0, 309.0, 22.0 ]
                                 }
                             },
                             {
