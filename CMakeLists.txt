@@ -24,4 +24,7 @@ add_subdirectory(source/ll_number)
 add_subdirectory(source/ll_slishi)
 add_subdirectory(source/ll_menu)
 add_subdirectory(source/ll_zip)
-add_subdirectory(source/ll_trackpad)
+
+if(APPLE)
+   add_subdirectory(source/ll_trackpad)
+endif()
