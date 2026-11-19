@@ -1,0 +1,259 @@
+name: Release
+
+# Ways to run this:
+#   1. Actions → Release → Run workflow, enter a version (e.g. 1.2.0).
+#      Builds macOS + Windows, bumps package-info.json, commits, tags, publishes.
+#   2. Bump + tag locally, then `git push && git push --tags`.
+#      The v* tag triggers a build and release.
+#   3. Pull requests that touch the build run build + verify only (no release).
+#
+# Free: macOS externals are built universal and ad-hoc signed (no Apple
+# Developer account), Windows externals are cross-compiled with MinGW-w64.
+# Only the automatic GITHUB_TOKEN is used.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release, e.g. 1.2.0"
+        required: true
+        type: string
+      dry_run:
+        description: "Build and verify only (no commit, tag or release)"
+        required: false
+        type: boolean
+        default: false
+      commit_externals:
+        description: "Also commit the freshly built externals/ to the repo"
+        required: false
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
+      - "scripts/**"
+      - "source/**"
+      - "toolchains/**"
+      - "CMakeLists.txt"
+      - "max-sdk-base"
+      - "package-info.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.ref) || 'release' }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION="${INPUT_VERSION#v}"
+          elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            VERSION=$(jq -r .version package-info.json)
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::'$VERSION' is not a valid version (expected e.g. 1.2.0 or 1.2.0-beta.1)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Make sure the tag doesn't exist yet
+        if: github.event_name == 'workflow_dispatch' && !inputs.dry_run
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::Tag $TAG already exists"
+            exit 1
+          fi
+
+      - name: Check package-info.json matches the tag
+        if: github.event_name == 'push'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          ACTUAL=$(jq -r .version package-info.json)
+          if [ "$ACTUAL" != "$VERSION" ]; then
+            echo "::error::package-info.json says $ACTUAL but the tag is v$VERSION. Run bump_version.sh before tagging."
+            exit 1
+          fi
+
+  build-mac:
+    needs: prepare
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build universal macOS externals
+        run: bash scripts/build_package.sh --platform=mac --build-only
+
+      # tar keeps the bundles' symlinks and executable bits, which
+      # upload-artifact would otherwise drop.
+      - name: Archive externals
+        run: |
+          cd externals
+          tar -cf ../mac-externals.tar *.mxo
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-externals
+          path: mac-externals.tar
+          if-no-files-found: error
+
+  build-win:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install MinGW-w64
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64
+          # Use the posix thread model (same as Homebrew's mingw-w64) so
+          # std::thread / std::mutex work.
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+
+      - name: Build Windows externals
+        run: bash scripts/build_package.sh --platform=win --build-only
+
+      # MinGW can link its runtime as DLLs that Windows users won't have.
+      # Fail if any external depends on one.
+      - name: Check Windows DLL dependencies
+        run: |
+          status=0
+          for f in externals/*.mxe64; do
+            deps=$(x86_64-w64-mingw32-objdump -p "$f" | awk '/DLL Name:/ {print $3}')
+            echo "$(basename "$f"): $(echo $deps)"
+            for d in $deps; do
+              case "$d" in
+                libstdc++*|libgcc*|libwinpthread*)
+                  echo "::error file=$f::depends on $d, which isn't on users' machines. Link it statically (-static-libgcc -static-libstdc++ -static)."
+                  status=1 ;;
+              esac
+            done
+          done
+          exit $status
+
+      - name: Archive externals
+        run: |
+          cd externals
+          tar -cf ../win-externals.tar *.mxe64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-externals
+          path: win-externals.tar
+          if-no-files-found: error
+
+  package:
+    needs: [prepare, build-mac, build-win]
+    runs-on: macos-latest
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Put freshly built externals in place
+        run: |
+          # Remove any committed builds so only this run's externals ship.
+          rm -rf externals/*.mxo externals/*.mxe64
+          mkdir -p externals
+          tar -xf artifacts/mac-externals/mac-externals.tar -C externals
+          tar -xf artifacts/win-externals/win-externals.tar -C externals
+          ls -la externals
+
+      - name: Bump version in package-info.json
+        if: github.event_name == 'workflow_dispatch'
+        run: bash scripts/bump_version.sh "$VERSION"
+
+      - name: Package and ad-hoc sign
+        run: bash scripts/build_package.sh --platform=all --no-build
+
+      - name: Verify macOS externals
+        run: bash scripts/verify_externals.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ll_externals-${{ env.VERSION }}
+          path: |
+            ll_externals.maxpack
+            ll_externals.zip
+          if-no-files-found: error
+
+      - name: Commit and tag
+        if: github.event_name == 'workflow_dispatch' && !inputs.dry_run
+        env:
+          BRANCH: ${{ github.ref_name }}
+          COMMIT_EXTERNALS: ${{ inputs.commit_externals }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-info.json
+          if [ "$COMMIT_EXTERNALS" = "true" ]; then
+            git add -A externals
+          fi
+          git diff --cached --quiet || git commit -m "Release v$VERSION"
+          git tag "$TAG"
+          # Pushes made with GITHUB_TOKEN don't trigger workflows, so this tag
+          # won't start a second run.
+          git push origin "HEAD:refs/heads/$BRANCH"
+          git push origin "refs/tags/$TAG"
+
+      - name: Publish GitHub release
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > release-notes.md <<'EOF'
+          ## Install
+
+          Download **`ll_externals.maxpack`** and either drag it onto the Max console,
+          double-click it, or put it in `~/Documents/Max 9/Packages/` and restart Max.
+          Max removes the macOS quarantine flag automatically when it installs a `.maxpack`.
+
+          `ll_externals.zip` has the same contents for manual installs. If you unzip it
+          yourself on macOS, clear the quarantine flag afterwards:
+
+          ```
+          xattr -dr com.apple.quarantine ~/Documents/Max\ 9/Packages/ll_externals
+          ```
+          EOF
+          gh release create "$TAG" ll_externals.maxpack ll_externals.zip \
+            --title "ll_externals $TAG" \
+            --notes-file release-notes.md \
+            --generate-notes \
+            --verify-tag
