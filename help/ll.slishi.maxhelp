@@ -122,7 +122,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 128.0, 227.0, 341.0, 100.0 ],
-					"text" : "ll_slishi is a slider that contains 3 levels of adjustment, from left to right:\n- coarse adjustment: inc/dec numbers by 100\n- medium adjustment: inc/dec numbers by 1\n- fine adjustment: inc/dec numbers by 0.01\n"
+					"text" : "ll.slishi is a slider that contains 3 levels of adjustment, from left to right:\n- coarse adjustment: inc/dec numbers by 100\n- medium adjustment: inc/dec numbers by 1\n- fine adjustment: inc/dec numbers by 0.01\n"
 				}
 
 			}
@@ -134,7 +134,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 18.5, 11.0, 140.0, 40.0 ],
-					"text" : "ll_slishi"
+					"text" : "ll.slishi"
 				}
 
 			}
@@ -222,7 +222,7 @@
 				"box" : 				{
 					"bgcolor" : [ 0.0, 0.706048488616943, 0.935728669166565, 1.0 ],
 					"id" : "obj-1",
-					"maxclass" : "ll_slishi",
+					"maxclass" : "ll.slishi",
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
@@ -307,7 +307,7 @@
 				"type" : "iLaX"
 			}
 , 			{
-				"name" : "ll_slishi.mxo",
+				"name" : "ll.slishi.mxo",
 				"type" : "iLaX"
 			}
  ],

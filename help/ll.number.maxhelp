@@ -89,7 +89,7 @@
                                     "fontface": 0,
                                     "hideonenter": 1,
                                     "id": "obj-18",
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "mousefocus": 1,
                                     "numinlets": 1,
                                     "numoutlets": 1,
@@ -118,7 +118,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 18.0, 10.0, 140.0, 40.0 ],
-                                    "text": "ll_number"
+                                    "text": "ll.number"
                                 }
                             },
                             {
@@ -374,7 +374,7 @@
                                     "fontface": 0,
                                     "id": "obj-4",
                                     "label": [ "attack", "decay" ],
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "mousefocus": 1,
                                     "numinlets": 1,
                                     "numoutlets": 1,
@@ -392,7 +392,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 18.0, 10.0, 140.0, 40.0 ],
-                                    "text": "ll_number"
+                                    "text": "ll.number"
                                 }
                             },
                             {
@@ -578,7 +578,7 @@
                                     "fontface": 0,
                                     "format": [ "auto" ],
                                     "id": "obj-4",
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "numinlets": 1,
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
@@ -1144,7 +1144,7 @@
                                                     "fontsize": 20.0,
                                                     "format": [ 10000, 1000, "s", "e", "c", 100, 10, 1, "m", "s" ],
                                                     "id": "obj-8",
-                                                    "maxclass": "ll_number",
+                                                    "maxclass": "ll.number",
                                                     "numinlets": 1,
                                                     "numoutlets": 1,
                                                     "outlettype": [ "" ],
@@ -1160,7 +1160,7 @@
                                                     "fontsize": 24.0,
                                                     "format": [ 864000000, 86400000, "d", 36000000, 3600000, "h", 600000, 60000, "m", 10000, 1000, "s", 100, 10, 1, "m", "s" ],
                                                     "id": "obj-6",
-                                                    "maxclass": "ll_number",
+                                                    "maxclass": "ll.number",
                                                     "numinlets": 1,
                                                     "numoutlets": 1,
                                                     "outlettype": [ "" ],
@@ -1719,7 +1719,7 @@
                                     "id": "obj-34",
                                     "label": [ "wert" ],
                                     "labelcolor": [ 0.933333, 0.066667, 0.066667, 1.0 ],
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "min": 1.0,
                                     "numinlets": 1,
                                     "numoutlets": 1,
@@ -1756,7 +1756,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 18.0, 10.0, 140.0, 40.0 ],
-                                    "text": "ll_number"
+                                    "text": "ll.number"
                                 }
                             }
                         ],
@@ -2098,7 +2098,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 18.0, 10.0, 140.0, 40.0 ],
-                                    "text": "ll_number"
+                                    "text": "ll.number"
                                 }
                             },
                             {
@@ -2111,7 +2111,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 74.0, 503.0, 631.0, 69.0 ],
-                                    "text": "typing: you can type in a number with the keyboard if the ll_number is \"selected\".\n            (if not selected, select by command clicking a digit)\n            use enter to finish typing and output the value\n            use esc to exit typing without change."
+                                    "text": "typing: you can type in a number with the keyboard if the ll.number is \"selected\".\n            (if not selected, select by command clicking a digit)\n            use enter to finish typing and output the value\n            use esc to exit typing without change."
                                 }
                             },
                             {
@@ -2149,7 +2149,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 74.0, 84.0, 476.0, 100.0 ],
-                                    "text": "ll_number is a numberbox and a slider in the same box\n\ndepending on the \"mousefocus\" you either drag the slider or the number(s).\n\nif you click in the empty space left of the digits, the mousefocus will change to \"slider\" and it behaves as a slider."
+                                    "text": "ll.number is a numberbox and a slider in the same box\n\ndepending on the \"mousefocus\" you either drag the slider or the number(s).\n\nif you click in the empty space left of the digits, the mousefocus will change to \"slider\" and it behaves as a slider."
                                 }
                             },
                             {
@@ -2184,7 +2184,7 @@
                                     "id": "obj-34",
                                     "label": [ 0 ],
                                     "labelcolor": [ 0.933333, 0.066667, 0.066667, 1.0 ],
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "numinlets": 1,
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
@@ -2351,7 +2351,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 18.0, 10.0, 140.0, 40.0 ],
-                                    "text": "ll_number"
+                                    "text": "ll.number"
                                 }
                             },
                             {
@@ -2750,7 +2750,7 @@
                                     "id": "obj-1",
                                     "label": [ "multi" ],
                                     "labelcolor": [ 0.772549, 0.509804, 0.882353, 1.0 ],
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "mousefocus": 1,
                                     "multidrag": 0,
                                     "numinlets": 1,
@@ -3040,7 +3040,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 18.0, 10.0, 140.0, 40.0 ],
-                                    "text": "ll_number"
+                                    "text": "ll.number"
                                 }
                             },
                             {
@@ -3236,7 +3236,7 @@
                                     "label": [ "slid" ],
                                     "labelcolor": [ 0.933333, 0.066667, 0.066667, 1.0 ],
                                     "mark": 30.0,
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "min": 1.0,
                                     "numinlets": 1,
                                     "numoutlets": 1,
@@ -3476,7 +3476,7 @@
                                                     "numinlets": 1,
                                                     "numoutlets": 0,
                                                     "patching_rect": [ 54.0, 405.0, 362.0, 22.0 ],
-                                                    "text": "move the slider of ll_number to see what comes out."
+                                                    "text": "move the slider of ll.number to see what comes out."
                                                 }
                                             },
                                             {
@@ -3535,7 +3535,7 @@
                                                     "numinlets": 1,
                                                     "numoutlets": 0,
                                                     "patching_rect": [ 59.0, 51.0, 362.0, 38.0 ],
-                                                    "text": "change the floatbox to see the result and\nmove the slider of ll_number below to see the scaling."
+                                                    "text": "change the floatbox to see the result and\nmove the slider of ll.number below to see the scaling."
                                                 }
                                             },
                                             {
@@ -3568,9 +3568,9 @@
                                                     "fontface": 0,
                                                     "format": [ 1.8 ],
                                                     "id": "obj-1",
-                                                    "label": [ "ll_number" ],
+                                                    "label": [ "ll.number" ],
                                                     "labelcolor": [ 0.772549, 0.509804, 0.882353, 1.0 ],
-                                                    "maxclass": "ll_number",
+                                                    "maxclass": "ll.number",
                                                     "mousefocus": 1,
                                                     "numinlets": 1,
                                                     "numoutlets": 1,
@@ -3653,7 +3653,7 @@
                                                                     "fontsize": 10.0,
                                                                     "format": [ 1.6 ],
                                                                     "id": "obj-19",
-                                                                    "maxclass": "ll_number",
+                                                                    "maxclass": "ll.number",
                                                                     "numinlets": 1,
                                                                     "numoutlets": 1,
                                                                     "outlettype": [ "" ],
@@ -4028,7 +4028,7 @@
                                     "labelcolor": [ 0.772549, 0.509804, 0.882353, 1.0 ],
                                     "mark": 0.0,
                                     "max": 4.0,
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "min": -4.0,
                                     "mousefocus": 1,
                                     "numinlets": 1,
@@ -4132,7 +4132,7 @@
                                     "id": "obj-8",
                                     "labelcolor": [ 0.788235, 0.941176, 0.32549, 1.0 ],
                                     "max": 14080.0,
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "min": 55.0,
                                     "mousefocus": 1,
                                     "numinlets": 1,
@@ -4151,7 +4151,7 @@
                                     "format": [ 1.2 ],
                                     "id": "obj-5",
                                     "labelcolor": [ 0.772549, 0.509804, 0.882353, 1.0 ],
-                                    "maxclass": "ll_number",
+                                    "maxclass": "ll.number",
                                     "mousefocus": 1,
                                     "numinlets": 1,
                                     "numoutlets": 1,
@@ -4646,7 +4646,7 @@
                     "numinlets": 1,
                     "numoutlets": 0,
                     "patching_rect": [ 24.0, 8.0, 98.0, 27.0 ],
-                    "text": "ll_number"
+                    "text": "ll.number"
                 }
             }
         ],

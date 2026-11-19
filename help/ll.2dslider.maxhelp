@@ -94,7 +94,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 18.0, 21.0, 197.0, 47.0 ],
-									"text" : "ll_2dslider"
+									"text" : "ll.2dslider"
 								}
 
 							}
@@ -188,7 +188,7 @@
 									"fontface" : 0,
 									"fontsize" : 13.0,
 									"id" : "obj-5",
-									"maxclass" : "ll_2dslider",
+									"maxclass" : "ll.2dslider",
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
@@ -2065,7 +2065,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 18.0, 21.0, 197.0, 47.0 ],
-									"text" : "ll_2dslider"
+									"text" : "ll.2dslider"
 								}
 
 							}
@@ -2405,7 +2405,7 @@
 									"fontface" : 0,
 									"fontsize" : 13.0,
 									"id" : "obj-5",
-									"maxclass" : "ll_2dslider",
+									"maxclass" : "ll.2dslider",
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
@@ -2652,7 +2652,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 18.0, 21.0, 197.0, 47.0 ],
-									"text" : "ll_2dslider"
+									"text" : "ll.2dslider"
 								}
 
 							}
@@ -2943,7 +2943,7 @@
 									"fontface" : 0,
 									"fontsize" : 13.0,
 									"id" : "obj-5",
-									"maxclass" : "ll_2dslider",
+									"maxclass" : "ll.2dslider",
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
@@ -4112,7 +4112,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 58.0, 14.0, 93.0, 26.0 ],
-					"text" : "ll_2dslider"
+					"text" : "ll.2dslider"
 				}
 
 			}
@@ -4217,7 +4217,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 18.0, 21.0, 197.0, 47.0 ],
-									"text" : "ll_2dslider"
+									"text" : "ll.2dslider"
 								}
 
 							}
@@ -4293,7 +4293,7 @@
 									"fontface" : 0,
 									"fontsize" : 19.0,
 									"id" : "obj-28",
-									"maxclass" : "ll_2dslider",
+									"maxclass" : "ll.2dslider",
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
@@ -4825,7 +4825,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 18.0, 21.0, 197.0, 47.0 ],
-									"text" : "ll_2dslider"
+									"text" : "ll.2dslider"
 								}
 
 							}
@@ -5090,7 +5090,7 @@
 									"fontface" : 0,
 									"fontsize" : 13.0,
 									"id" : "obj-44",
-									"maxclass" : "ll_2dslider",
+									"maxclass" : "ll.2dslider",
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
@@ -5774,7 +5774,7 @@
 					"fontface" : 0,
 					"fontsize" : 13.0,
 					"id" : "obj-5",
-					"maxclass" : "ll_2dslider",
+					"maxclass" : "ll.2dslider",
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
@@ -5894,7 +5894,7 @@
 		}
 ,
 		"dependency_cache" : [ 			{
-				"name" : "ll_2dslider.mxo",
+				"name" : "ll.2dslider.mxo",
 				"type" : "iLaX"
 			}
  ],

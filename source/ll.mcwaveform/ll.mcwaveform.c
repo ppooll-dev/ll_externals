@@ -221,7 +221,7 @@ void ll_mcwaveform_mousemove(t_ll_mcwaveform *x, t_object *patcherview, t_pt pt,
 
 void ext_main(void *r){
     t_class *c;
-    c = class_new("ll_mcwaveform",
+    c = class_new("ll.mcwaveform",
                   (method)ll_mcwaveform_new,
                   (method)ll_mcwaveform_free,
                   sizeof(t_ll_mcwaveform),
@@ -398,6 +398,7 @@ void ext_main(void *r){
     CLASS_ATTR_ATTR_PARSE(c, "color","save", USESYM(long), 0, "0");
 
     class_register(CLASS_BOX, c);
+    class_alias(c, gensym("ll_mcwaveform"));
     
     // Supported Audio Formats
     s_numtypes = 0;

@@ -109,7 +109,7 @@
                                     "outlettype": [ "", "", "", "" ],
                                     "patching_rect": [ 65.0, 359.0, 56.0, 22.0 ],
                                     "restore": {
-                                        "ll_menu": [ "" ]
+                                        "ll.menu": [ "" ]
                                     },
                                     "text": "autopattr",
                                     "varname": "u629003621"
@@ -231,7 +231,7 @@
                                     "fontsize": 12.0,
                                     "id": "obj-3",
                                     "items": [ "size", ",", "and", ",", "fontsize", ",", "are", ",", "independent", ",", "-", ",", "show", ",", "by", ",", "message" ],
-                                    "maxclass": "ll_menu",
+                                    "maxclass": "ll.menu",
                                     "menufontsize": 12.0,
                                     "numinlets": 1,
                                     "numoutlets": 3,
@@ -242,7 +242,7 @@
                                     "pattrmode": 1,
                                     "positionmode": 1,
                                     "prefix": "",
-                                    "varname": "ll_menu"
+                                    "varname": "ll.menu"
                                 }
                             },
                             {
@@ -461,7 +461,7 @@
                                     "fontname": "Arial",
                                     "id": "obj-2",
                                     "items": [ "check", ",", "last", ",", "item", ",", "or", ",", "toggle" ],
-                                    "maxclass": "ll_menu",
+                                    "maxclass": "ll.menu",
                                     "numinlets": 1,
                                     "numoutlets": 3,
                                     "outlettype": [ "", "", "" ],
@@ -470,7 +470,7 @@
                                     "patching_rect": [ 175.0, 138.0, 100.0, 24.0 ],
                                     "positionmode": 1,
                                     "prefix": "menu",
-                                    "varname": "ll_menu"
+                                    "varname": "ll.menu"
                                 }
                             }
                         ],
@@ -561,7 +561,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 71.0, 71.0, 360.0, 21.0 ],
-                                    "text": "ll_menu is similar to umenu with a few essential differences..."
+                                    "text": "ll.menu is similar to umenu with a few essential differences..."
                                 }
                             },
                             {
@@ -744,7 +744,7 @@
                                     "fontsize": 12.0,
                                     "id": "obj-3",
                                     "items": [ "size", ",", "and", ",", "fontsize", ",", "are", ",", "independent", ",", "-", ",", "show", ",", "by", ",", "message" ],
-                                    "maxclass": "ll_menu",
+                                    "maxclass": "ll.menu",
                                     "menufontsize": 12.0,
                                     "numinlets": 1,
                                     "numoutlets": 3,
@@ -753,7 +753,7 @@
                                     "parameter_enable": 0,
                                     "patching_rect": [ 114.0, 311.0, 120.0, 20.0 ],
                                     "prefix": "",
-                                    "varname": "ll_menu"
+                                    "varname": "ll.menu"
                                 }
                             },
                             {
@@ -774,7 +774,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 18.0, 10.0, 140.0, 40.0 ],
-                                    "text": "ll_menu"
+                                    "text": "ll.menu"
                                 }
                             },
                             {
@@ -1051,7 +1051,7 @@
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 416.0, 266.0, 105.0, 22.0 ],
-                                    "text": "sprintf ll_menu \\\"\\\""
+                                    "text": "sprintf ll.menu \\\"\\\""
                                 }
                             },
                             {
@@ -1184,7 +1184,7 @@
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 223.0, 266.0, 61.0, 22.0 ],
-                                    "text": "ll_menu b"
+                                    "text": "ll.menu b"
                                 }
                             },
                             {
@@ -1219,7 +1219,7 @@
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 154.0, 266.0, 69.0, 22.0 ],
-                                    "text": "ll_menu (a)"
+                                    "text": "ll.menu (a)"
                                 }
                             },
                             {
@@ -1249,7 +1249,7 @@
                                     "fontname": "Arial",
                                     "id": "obj-1",
                                     "items": [ "(a)", ",", "-", ",", "b", ",", "c" ],
-                                    "maxclass": "ll_menu",
+                                    "maxclass": "ll.menu",
                                     "numinlets": 1,
                                     "numoutlets": 3,
                                     "outlettype": [ "", "", "" ],
@@ -1257,7 +1257,7 @@
                                     "patching_rect": [ 79.0, 170.0, 100.0, 24.0 ],
                                     "pattrmode": 1,
                                     "prefix": "",
-                                    "varname": "ll_menu"
+                                    "varname": "ll.menu"
                                 }
                             },
                             {
@@ -1269,7 +1269,7 @@
                                     "outlettype": [ "", "", "", "" ],
                                     "patching_rect": [ 79.0, 266.0, 56.0, 22.0 ],
                                     "restore": {
-                                        "ll_menu": [ "b" ],
+                                        "ll.menu": [ "b" ],
                                         "umenu": [ "b" ]
                                     },
                                     "text": "autopattr",
@@ -1602,7 +1602,7 @@
                                     "fontname": "Arial",
                                     "id": "obj-1",
                                     "items": [ "a", ",", "b", ",", "c" ],
-                                    "maxclass": "ll_menu",
+                                    "maxclass": "ll.menu",
                                     "numinlets": 1,
                                     "numoutlets": 3,
                                     "outlettype": [ "", "", "" ],
@@ -2068,7 +2068,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 50.0, 178.0, 77.0, 22.0 ],
-                                    "text": "print ll_menu"
+                                    "text": "print ll.menu"
                                 }
                             },
                             {
@@ -2323,7 +2323,7 @@
                     "numinlets": 1,
                     "numoutlets": 0,
                     "patching_rect": [ 454.0, 105.0, 127.0, 20.0 ],
-                    "text": "ll_menu only!"
+                    "text": "ll.menu only!"
                 }
             },
             {
@@ -2372,7 +2372,7 @@
                     "numinlets": 1,
                     "numoutlets": 0,
                     "patching_rect": [ 333.0, 193.0, 81.0, 20.0 ],
-                    "text": "ll_menu"
+                    "text": "ll.menu"
                 }
             },
             {
@@ -2536,7 +2536,7 @@
                     "outlettype": [ "", "", "", "" ],
                     "patching_rect": [ 90.0, 567.0, 56.0, 22.0 ],
                     "restore": {
-                        "ll_menu": [ 5 ],
+                        "ll.menu": [ 5 ],
                         "umenu": [ 2 ]
                     },
                     "text": "autopattr",
@@ -2629,7 +2629,7 @@
                     "fontname": "Arial",
                     "id": "obj-2",
                     "items": [ "one", ",", "(two)", ",", "-", ",", "three", "halves", ",", "<separator>", ",", "four", ",", "five" ],
-                    "maxclass": "ll_menu",
+                    "maxclass": "ll.menu",
                     "numinlets": 1,
                     "numoutlets": 3,
                     "outlettype": [ "", "", "" ],
@@ -2640,7 +2640,7 @@
                     "prefix": "menu",
                     "valuepopup": 1,
                     "valuepopuplabel": 2,
-                    "varname": "ll_menu"
+                    "varname": "ll.menu"
                 }
             },
             {

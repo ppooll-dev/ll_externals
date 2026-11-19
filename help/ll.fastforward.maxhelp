@@ -207,7 +207,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 120.0, 422.0, 79.0, 21.0 ],
-									"text" : "ll_fastforward"
+									"text" : "ll.fastforward"
 								}
 
 							}
@@ -496,7 +496,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 136.0, 171.0, 79.0, 21.0 ],
-									"text" : "ll_fastforward"
+									"text" : "ll.fastforward"
 								}
 
 							}
@@ -919,7 +919,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 32.0, 8.0, 235.0, 47.0 ],
-									"text" : "ll_fastforward"
+									"text" : "ll.fastforward"
 								}
 
 							}
@@ -933,7 +933,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 163.0, 169.0, 79.0, 21.0 ],
-									"text" : "ll_fastforward"
+									"text" : "ll.fastforward"
 								}
 
 							}
@@ -1246,7 +1246,7 @@
 													"numinlets" : 1,
 													"numoutlets" : 0,
 													"patching_rect" : [ 109.0, 40.0, 273.0, 20.0 ],
-													"text" : "ll_fastforward is a replacement for this abstraction"
+													"text" : "ll.fastforward is a replacement for this abstraction"
 												}
 
 											}
@@ -1486,7 +1486,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 113.0, 51.0, 80.0, 20.0 ],
-									"text" : "ll_fastforward"
+									"text" : "ll.fastforward"
 								}
 
 							}
@@ -1497,7 +1497,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 72.0, 14.0, 201.0, 20.0 ],
-									"text" : "compare ll_fastforward with forward:"
+									"text" : "compare ll.fastforward with forward:"
 								}
 
 							}
@@ -1630,7 +1630,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 113.0, 273.0, 82.0, 22.0 ],
-									"text" : "ll_fastforward"
+									"text" : "ll.fastforward"
 								}
 
 							}
@@ -1831,7 +1831,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 32.0, 8.0, 206.0, 24.0 ],
-					"text" : "ll_fastforward"
+					"text" : "ll.fastforward"
 				}
 
 			}
@@ -1890,7 +1890,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 45.0, 17.0, 356.0, 20.0 ],
-									"text" : "ll_fastforward is handy to connect to pattrstorage @outputmode 1"
+									"text" : "ll.fastforward is handy to connect to pattrstorage @outputmode 1"
 								}
 
 							}
@@ -2016,7 +2016,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 45.0, 94.0, 82.0, 22.0 ],
-									"text" : "ll_fastforward"
+									"text" : "ll.fastforward"
 								}
 
 							}
@@ -2180,7 +2180,7 @@
  ],
 		"lines" : [  ],
 		"dependency_cache" : [ 			{
-				"name" : "ll_fastforward.mxo",
+				"name" : "ll.fastforward.mxo",
 				"type" : "iLaX"
 			}
  ],

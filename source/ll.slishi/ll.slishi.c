@@ -45,7 +45,7 @@ void ll_slishi_constain(t_ll_slishi *x);
 void ext_main(void *r) {
     t_class *c;
     common_symbols_init();
-    c = class_new("ll_slishi",
+    c = class_new("ll.slishi",
                   (method)ll_slishi_new,
                   (method)ll_slishi_free,
                   sizeof(t_ll_slishi),
@@ -104,6 +104,7 @@ void ext_main(void *r) {
     CLASS_ATTR_ORDER(c, "setonly", 0, "3");
     
     class_register(CLASS_BOX, c);
+    class_alias(c, gensym("ll_slishi"));
     s_ll_slishi_class = c;
 }
 

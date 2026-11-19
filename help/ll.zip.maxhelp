@@ -196,7 +196,7 @@
                     "numoutlets": 1,
                     "outlettype": [ "" ],
                     "patching_rect": [ 78.0, 307.0, 36.0, 22.0 ],
-                    "text": "ll_zip"
+                    "text": "ll.zip"
                 }
             }
         ],

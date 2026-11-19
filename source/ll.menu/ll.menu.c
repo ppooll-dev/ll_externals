@@ -269,7 +269,7 @@ void ext_main(void *r)
     
     sym_items = gensym("items");
     
-    c = class_new("ll_menu",
+    c = class_new("ll.menu",
                   (method)ll_menu_new,
                   (method)ll_menu_free,
                   sizeof(t_ll_menu),
@@ -393,6 +393,7 @@ void ext_main(void *r)
     CLASS_STICKY_ATTR_CLEAR(c, "category");
     
     class_register(CLASS_BOX, c);
+    class_alias(c, gensym("ll_menu"));
     ll_menu_class = c;
 }
 

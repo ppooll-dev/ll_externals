@@ -74,6 +74,7 @@ void ext_main(void *r)
     class_addmethod(c, (method)ll_zip_do, "zip", A_GIMME, 0);
 
     class_register(CLASS_BOX, c);
+    class_alias(c, gensym("ll_zip"));
     ll_zip_class = c;
 }
 

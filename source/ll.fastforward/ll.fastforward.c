@@ -31,7 +31,7 @@ void ll_fastforward_list(t_ll_fastforward *x, t_symbol *s, long ac, t_atom *av);
 void *ll_fastforward_class;
 
 void ext_main(void *r) {
-    t_class *c = class_new("ll_fastforward",
+    t_class *c = class_new("ll.fastforward",
                            (method)ll_fastforward_new,
                            (method)ll_fastforward_free,
                            (long)sizeof(t_ll_fastforward),
@@ -48,6 +48,7 @@ void ext_main(void *r) {
     class_addmethod(c, (method)ll_fastforward_list, "list", A_GIMME, 0);
 
     class_register(CLASS_BOX, c);
+    class_alias(c, gensym("ll_fastforward"));
     ll_fastforward_class = c;
 }
 

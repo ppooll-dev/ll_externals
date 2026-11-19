@@ -331,7 +331,7 @@
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 48.5, 343.0, 168.0, 22.0 ],
-                                    "text": "refer ll_trackpad, col 0 width 0"
+                                    "text": "refer ll.trackpad, col 0 width 0"
                                 }
                             },
                             {
@@ -346,7 +346,7 @@
                                         "embed": 0,
                                         "precision": 6
                                     },
-                                    "text": "coll ll_trackpad"
+                                    "text": "coll ll.trackpad"
                                 }
                             },
                             {
@@ -754,7 +754,7 @@
                     "numinlets": 1,
                     "numoutlets": 0,
                     "patching_rect": [ 12.0, 8.0, 209.0, 29.0 ],
-                    "text": "ll_trackpad"
+                    "text": "ll.trackpad"
                 }
             },
             {
@@ -974,7 +974,7 @@
                     "id": "obj-1",
                     "labelcolor": [ 0.4677417278289795, 0.501061737537384, 0.469826877117157, 1.0 ],
                     "linecolor": [ 0.9999999403953552, 1.0, 1.0, 0.27578125 ],
-                    "maxclass": "ll_trackpad",
+                    "maxclass": "ll.trackpad",
                     "numinlets": 1,
                     "numoutlets": 2,
                     "outlettype": [ "list", "bang" ],

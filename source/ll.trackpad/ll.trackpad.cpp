@@ -216,7 +216,7 @@ int C74_EXPORT main(void){
     
     t_class *c;
 
-    c = class_new("ll_trackpad",
+    c = class_new("ll.trackpad",
                   (method)ll_trackpad_new,
                   (method)ll_trackpad_free,
                   sizeof(t_ll_trackpad),
@@ -314,6 +314,7 @@ int C74_EXPORT main(void){
     CLASS_ATTR_STYLE_LABEL(c,            "linecolor", 0, "rgba", "Line Color");
     
     class_register(CLASS_BOX, c);
+    class_alias(c, gensym("ll_trackpad"));
     s_ll_trackpad_class = c;
     
     return 1;
@@ -1005,11 +1006,11 @@ static void ll_trackpad_key(t_ll_trackpad *x,
 }
 
 static void ll_trackpad_focusgained(t_ll_trackpad *x, t_object *pv) {
-//    post("ll_trackpad: focus gained");
+//    post("ll.trackpad: focus gained");
 }
 
 static void ll_trackpad_focuslost(t_ll_trackpad *x, t_object *pv) {
-//    post("ll_trackpad: focus lost");
+//    post("ll.trackpad: focus lost");
     ll_trackpad_set_cursor(x, pv, 0);
 }
 

@@ -162,7 +162,7 @@ void ext_main(void *r){
     
     common_symbols_init();
     
-    c = class_new("ll_2dslider",
+    c = class_new("ll.2dslider",
                   (method)ll_2dslider_new,
                   (method)ll_2dslider_free,
                   sizeof(t_ll_2dslider),
@@ -326,6 +326,7 @@ void ext_main(void *r){
     CLASS_ATTR_ATTR_PARSE(c, "color","save", USESYM(long), 0, "0");
     
     class_register(CLASS_BOX, c);
+    class_alias(c, gensym("ll_2dslider"));
     s_ll_2dslider_class = c;
 }
 void *ll_2dslider_new(t_symbol *s, short argc, t_atom *argv){

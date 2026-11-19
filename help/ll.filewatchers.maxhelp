@@ -64,7 +64,7 @@
                                     "numinlets": 1,
                                     "numoutlets": 0,
                                     "patching_rect": [ 10.0, 12.0, 209.0, 29.0 ],
-                                    "text": "ll_filewatchers"
+                                    "text": "ll.filewatchers"
                                 }
                             },
                             {
@@ -217,7 +217,7 @@
                                     "numoutlets": 1,
                                     "outlettype": [ "" ],
                                     "patching_rect": [ 109.0, 294.0, 84.0, 22.0 ],
-                                    "text": "ll_filewatchers"
+                                    "text": "ll.filewatchers"
                                 }
                             }
                         ],

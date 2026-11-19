@@ -44,7 +44,7 @@ void ext_main(void *r)
 {
 	t_class *c;
 
-	c = class_new("ll_filewatchers", (method)filewatchers_new, (method)filewatchers_free, (long)sizeof(t_filewatchers),
+	c = class_new("ll.filewatchers", (method)filewatchers_new, (method)filewatchers_free, (long)sizeof(t_filewatchers),
 				  0L /* leave NULL!! */, A_GIMME, 0);
     
     class_addmethod(c, (method)filewatchers_list,           "list",         A_GIMME,    0);
@@ -70,6 +70,7 @@ void ext_main(void *r)
     CLASS_ATTR_DEFAULT_SAVE(c,          "enabled", 0, "0");
 
 	class_register(CLASS_BOX, c);
+	class_alias(c, gensym("ll_filewatchers"));
 	filewatchers_class = c;
 }
 

@@ -245,7 +245,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 27.5, 8.0, 239.0, 40.0 ],
-									"text" : "ll_mcwaveform"
+									"text" : "ll.mcwaveform"
 								}
 
 							}
@@ -280,7 +280,7 @@
 									"bgcolor" : [ 0.847058823529412, 0.847058823529412, 0.847058823529412, 1.0 ],
 									"chans" : 0,
 									"id" : "obj-3",
-									"maxclass" : "ll_mcwaveform",
+									"maxclass" : "ll.mcwaveform",
 									"modifiers" : 1,
 									"numinlets" : 1,
 									"numoutlets" : 1,
@@ -480,7 +480,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 27.5, 8.0, 239.0, 40.0 ],
-									"text" : "ll_mcwaveform"
+									"text" : "ll.mcwaveform"
 								}
 
 							}
@@ -709,7 +709,7 @@
 									"bgcolor" : [ 0.847058823529412, 0.847058823529412, 0.847058823529412, 1.0 ],
 									"chans" : 0,
 									"id" : "obj-3",
-									"maxclass" : "ll_mcwaveform",
+									"maxclass" : "ll.mcwaveform",
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
@@ -1117,7 +1117,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 27.5, 8.0, 239.0, 40.0 ],
-									"text" : "ll_mcwaveform"
+									"text" : "ll.mcwaveform"
 								}
 
 							}
@@ -1869,7 +1869,7 @@
 									"bgcolor" : [ 0.847058823529412, 0.847058823529412, 0.847058823529412, 1.0 ],
 									"chans" : 0,
 									"id" : "obj-3",
-									"maxclass" : "ll_mcwaveform",
+									"maxclass" : "ll.mcwaveform",
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
@@ -2237,7 +2237,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 28.0, 8.0, 239.0, 40.0 ],
-									"text" : "ll_mcwaveform"
+									"text" : "ll.mcwaveform"
 								}
 
 							}
@@ -3606,7 +3606,7 @@
 									"bgcolor" : [ 0.847058823529412, 0.847058823529412, 0.847058823529412, 1.0 ],
 									"chans" : 0,
 									"id" : "obj-3",
-									"maxclass" : "ll_mcwaveform",
+									"maxclass" : "ll.mcwaveform",
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
@@ -3825,7 +3825,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 27.5, 8.0, 201.0, 20.0 ],
-					"text" : "ll_mcwaveform"
+					"text" : "ll.mcwaveform"
 				}
 
 			}
@@ -3841,7 +3841,7 @@
 		}
 ,
 		"dependency_cache" : [ 			{
-				"name" : "ll_mcwaveform.mxo",
+				"name" : "ll.mcwaveform.mxo",
 				"type" : "iLaX"
 			}
 , 			{

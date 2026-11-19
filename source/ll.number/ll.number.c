@@ -225,7 +225,7 @@ t_max_err ll_number_setattr_ll_sliderstyle(t_ll_number *x, void *attr, long ac, 
 void ext_main(void *r){
     t_class *c;
     common_symbols_init();
-    c = class_new("ll_number",
+    c = class_new("ll.number",
                   (method)ll_number_new,
                   (method)ll_number_free,
                   sizeof(t_ll_number),
@@ -439,6 +439,7 @@ void ext_main(void *r){
     CLASS_ATTR_ATTR_PARSE(c, "color", "save", USESYM(long), 0, "0");
     
     class_register(CLASS_BOX, c);
+    class_alias(c, gensym("ll_number"));
     s_ll_number_class = c;
 }
 
@@ -517,7 +518,7 @@ void ll_number_free(t_ll_number *x){
 }
 
 void ll_number_about(t_ll_number *x){
-    post("ll_number - v1.5.1");
+    post("ll.number - v1.5.1");
 }
 
 bool ll_number_is_atom_a_number(long ac, t_atom *av){
@@ -793,7 +794,7 @@ void ll_number_float(t_ll_number *x, double f){
 // List-type message - a list of doubles replaces the the object's value list
 void ll_number_list(t_ll_number *x, t_symbol *s, short ac, t_atom *av) {
     if (ac > MAX_NUM_VALUES) {
-        error("ll_number: list exceeds maximum of %s items", MAX_NUM_VALUES);
+        error("ll.number: list exceeds maximum of %s items", MAX_NUM_VALUES);
     } else {
         if (ac && av) {
             x->ll_amount = ac;
