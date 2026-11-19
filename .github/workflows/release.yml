@@ -101,6 +101,7 @@ jobs:
   build-mac:
     needs: prepare
     runs-on: macos-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -125,19 +126,20 @@ jobs:
   build-win:
     needs: prepare
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install MinGW-w64
+        timeout-minutes: 5
+        # x86_64 + posix threads only (same thread model as Homebrew's mingw-w64)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y mingw-w64
-          # Use the posix thread model (same as Homebrew's mingw-w64) so
-          # std::thread / std::mutex work.
-          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
-          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+          # Fail fast and retry if an Ubuntu mirror stalls.
+          APT_OPTS="-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+          sudo apt-get $APT_OPTS update
+          sudo apt-get $APT_OPTS install -y --no-install-recommends g++-mingw-w64-x86-64-posix mingw-w64-x86-64-dev
 
       - name: Build Windows externals
         run: bash scripts/build_package.sh --platform=win --build-only
@@ -174,6 +176,7 @@ jobs:
   package:
     needs: [prepare, build-mac, build-win]
     runs-on: macos-latest
+    timeout-minutes: 15
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       TAG: ${{ needs.prepare.outputs.tag }}
