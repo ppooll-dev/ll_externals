@@ -247,7 +247,7 @@ jobs:
             CHANGES="https://github.com/$GITHUB_REPOSITORY/commits/$TAG"
           fi
           cat > release-notes.md <<EOF
-          Install: drag \`ll_externals.maxpack\` onto the Max console.
+          Install: double-click \`ll_externals.maxpack\`, or drag onto the Max console.
 
           Changes: $CHANGES
           EOF
