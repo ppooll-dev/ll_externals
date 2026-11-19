@@ -7,9 +7,8 @@ name: Release
 #      The v* tag triggers a build and release.
 #   3. Pull requests that touch the build run build + verify only (no release).
 #
-# Free: macOS externals are built universal and ad-hoc signed (no Apple
-# Developer account), Windows externals are cross-compiled with MinGW-w64.
-# Only the automatic GITHUB_TOKEN is used.
+# macOS externals are built universal and ad-hoc signed. Windows externals
+# are cross-compiled with MinGW-w64.
 
 on:
   workflow_dispatch:
@@ -238,22 +237,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cat > release-notes.md <<'EOF'
-          ## Install
+          PREV=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
+          if [ -n "$PREV" ]; then
+            CHANGES="https://github.com/$GITHUB_REPOSITORY/compare/$PREV...$TAG"
+          else
+            CHANGES="https://github.com/$GITHUB_REPOSITORY/commits/$TAG"
+          fi
+          cat > release-notes.md <<EOF
+          Install: drag \`ll_externals.maxpack\` onto the Max console.
 
-          Download **`ll_externals.maxpack`** and either drag it onto the Max console,
-          double-click it, or put it in `~/Documents/Max 9/Packages/` and restart Max.
-          Max removes the macOS quarantine flag automatically when it installs a `.maxpack`.
-
-          `ll_externals.zip` has the same contents for manual installs. If you unzip it
-          yourself on macOS, clear the quarantine flag afterwards:
-
-          ```
-          xattr -dr com.apple.quarantine ~/Documents/Max\ 9/Packages/ll_externals
-          ```
+          Changes: $CHANGES
           EOF
           gh release create "$TAG" ll_externals.maxpack ll_externals.zip \
-            --title "ll_externals $TAG" \
+            --title "$TAG" \
             --notes-file release-notes.md \
-            --generate-notes \
             --verify-tag
