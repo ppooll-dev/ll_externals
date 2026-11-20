@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ll_mcwaveform)
+project(ll.mcwaveform)
 
 set(CMAKE_OSX_ARCHITECTURES x86_64;arm64)
 

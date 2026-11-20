@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ll_externals)
+project(ll.externals)
 
 if(NOT CMAKE_BUILD_TYPE)
    set(CMAKE_BUILD_TYPE MinSizeRel CACHE STRING "Set the default build type to MinSizeRel" FORCE)
@@ -16,15 +16,15 @@ set(C74_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/externals" CACHE P
 include_directories(${MAX_SDK_BASE_PATH}/include)
 
 # Add subdirectories for each of the Max MSP objects
-add_subdirectory(source/ll_2dslider)
-add_subdirectory(source/ll_fastforward)
-add_subdirectory(source/ll_filewatchers)
-add_subdirectory(source/ll_mcwaveform)
-add_subdirectory(source/ll_number)
-add_subdirectory(source/ll_slishi)
-add_subdirectory(source/ll_menu)
-add_subdirectory(source/ll_zip)
+add_subdirectory(source/ll.2dslider)
+add_subdirectory(source/ll.fastforward)
+add_subdirectory(source/ll.filewatchers)
+add_subdirectory(source/ll.mcwaveform)
+add_subdirectory(source/ll.number)
+add_subdirectory(source/ll.slishi)
+add_subdirectory(source/ll.menu)
+add_subdirectory(source/ll.zip)
 
 if(APPLE)
-   add_subdirectory(source/ll_trackpad)
+   add_subdirectory(source/ll.trackpad)
 endif()
