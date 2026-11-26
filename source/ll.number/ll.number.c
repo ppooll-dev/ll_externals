@@ -146,6 +146,7 @@ typedef struct _ll_number
     char        ll_prepend_label;
     char        ll_prepend_name;
     char        ll_hide_on_change;
+    char        ll_deselect_on_enter;
 } t_ll_number;
 
 void *ll_number_new(t_symbol *s, short argc, t_atom *argv);
@@ -180,6 +181,7 @@ void ll_number_focusgained(t_ll_number *x, t_object *patcherview);
 void ll_number_focuslost(t_ll_number *x, t_object *patcherview);
 
 void ll_number_select(t_ll_number *x, long slider_index);
+void ll_number_deselect(t_ll_number *x);
 
 void ll_number_handle_number_focus(t_ll_number *x, short pos);
 
@@ -262,6 +264,7 @@ void ext_main(void *r){
     class_addmethod(c, (method)ll_number_focusgained,	"focusgained", A_CANT, 0);
     class_addmethod(c, (method)ll_number_focuslost,	    "focuslost", A_CANT, 0);
     class_addmethod(c, (method)ll_number_select,		"select", A_DEFLONG, 0);
+    class_addmethod(c, (method)ll_number_deselect,		"deselect", 0);
     class_addmethod(c, (method)ll_number_rand,			"rand",  A_DEFLONG, 0);
     
     class_addmethod(c, (method)ll_number_about,         "about", 0);
@@ -351,6 +354,10 @@ void ext_main(void *r){
     CLASS_ATTR_CHAR(c,              "hideonenter", 0, t_ll_number, ll_hide_on_change);
     CLASS_ATTR_DEFAULT_SAVE_PAINT(c,"hideonenter", 0, "0");
     CLASS_ATTR_STYLE_LABEL(c,       "hideonenter", 0, "onoff", "Hide object after user interaction");
+
+    CLASS_ATTR_CHAR(c,              "deselectonenter", 0, t_ll_number, ll_deselect_on_enter);
+    CLASS_ATTR_DEFAULT_SAVE_PAINT(c,"deselectonenter", 0, "0");
+    CLASS_ATTR_STYLE_LABEL(c,       "deselectonenter", 0, "onoff", "Deselect object on Enter/Return");
 
     CLASS_ATTR_ORDER(c, "min",          0,		"1");
     CLASS_ATTR_ORDER(c, "max",          0,		"2");
@@ -511,7 +518,7 @@ void ll_number_assist(t_ll_number *x, void *b, long m, long a, char *s){
 }
 
 void ll_number_free(t_ll_number *x){
-    for (int i = 0; i < MAX_TEXT_LENGTH; i++) {
+    for (int i = 0; i < MAX_NUM_VALUES; i++) {
         free(x->ll_label_list[i]);
     }
     jbox_free(&x->ll_box);
@@ -794,7 +801,7 @@ void ll_number_float(t_ll_number *x, double f){
 // List-type message - a list of doubles replaces the the object's value list
 void ll_number_list(t_ll_number *x, t_symbol *s, short ac, t_atom *av) {
     if (ac > MAX_NUM_VALUES) {
-        error("ll.number: list exceeds maximum of %s items", MAX_NUM_VALUES);
+        error("ll.number: list exceeds maximum of %d items", MAX_NUM_VALUES);
     } else {
         if (ac && av) {
             x->ll_amount = ac;
@@ -1180,7 +1187,8 @@ void ll_number_mousedown(t_ll_number *x, t_object *patcherview, t_pt pt, long mo
     //           use esc to exit typing without change.
     
     ll_number_endtyping(x);
-    
+    x->ll_is_object_selected = true;   // re-select on click (focusgained may not fire again)
+
     x->ll_number_cum = pt;
     short pos = ll_number_get_selchar_from_text(x, pt);
     bool is_over_number = pos > -1;
@@ -1279,7 +1287,11 @@ void ll_number_mouseup(t_ll_number *x, t_object *patcherview, t_pt pt, long modi
 // Keyboard Input -- typing new numbers, positioning cursor
 long ll_number_key(t_ll_number *x, t_object *patcherview, long keycode, long modifiers, long textcharacter) {
     char txt[16] = "";
-    
+
+    // After "deselect", pass keys on to Max instead of handling them
+    if (!x->ll_is_object_selected)
+        return 0;
+
     // Ensure selection position is valid
     ll_number_formposition(x, 0);
 
@@ -1330,6 +1342,8 @@ long ll_number_key(t_ll_number *x, t_object *patcherview, long keycode, long mod
         case TEXTCHAR_ENTER:
         case TEXTCHAR_RETURN:
             ll_number_endtyping(x);
+            if(x->ll_deselect_on_enter)
+                ll_number_deselect(x);
             if(x->ll_hide_on_change)
                 jbox_set_hidden((t_object *)x, 1);
             break;
@@ -1479,7 +1493,7 @@ t_max_err ll_number_setattr_ll_amount(t_ll_number *x, void *attr, long ac, t_ato
         for(long i=x->ll_amount; i < new_amount; i++){
             values[i] = x->ll_slider_min;
         }
-        atom_getdouble_array(new_amount, x->ll_vala, new_amount, values);
+        atom_setdouble_array(new_amount, x->ll_vala, new_amount, values);
     }
     x->ll_amount = new_amount;
     ll_number_redraw(x);
@@ -1606,7 +1620,17 @@ void ll_number_select(t_ll_number *x, long slider_index){
     }
     x->ll_selected_row = slider_index - 1;
     x->ll_selected_digit = 1;
+    x->ll_is_object_selected = true;
     jbox_grabfocus(&x->ll_box);
+}
+
+// "deselect" message - drop selection/typing state so the object stops
+// highlighting a digit and stops consuming keystrokes
+void ll_number_deselect(t_ll_number *x){
+    x->ll_is_typing = false;                            // discard any half-typed number
+    memset(x->ll_buffer, 0, sizeof(x->ll_buffer));
+    x->ll_is_object_selected = false;
+    jbox_redraw(&x->ll_box);
 }
 
 // "rand" - Randomize slider values between slider_min & slider_max
@@ -1618,7 +1642,7 @@ double ll_number_get_rand_value(t_ll_number *x){
 
 void ll_number_rand(t_ll_number *x, long slider_index){
     if(slider_index > x->ll_amount || slider_index < 0){
-        error("Slider out of index:", slider_index);
+        error("Slider out of index: %ld", slider_index);
         return;
     }
     double values[x->ll_amount];
