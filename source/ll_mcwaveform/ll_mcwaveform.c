@@ -1263,6 +1263,9 @@ void ll_mcwaveform_paint(t_ll_mcwaveform *x, t_object *view){
         ll_mcwaveform_paint_wf(x, wf_layer, &rect); // Only when waveform layer is invalid
         jbox_end_layer((t_object *)x, view, x->wf_layer_name);
     }
+    
+    // reset it to opaque here otherwise a transparent bgcolor also affects the waveform
+    jgraphics_set_source_rgba(g, 0., 0., 0., 1.);
     jbox_paint_layer((t_object *)x, view, x->wf_layer_name, 0., 0.);
     
     jgraphics_set_source_jrgba(g, &x->ll_selcolor);
